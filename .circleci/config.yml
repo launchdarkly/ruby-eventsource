@@ -32,19 +32,19 @@ jobs:
   test-2.2:
     <<: *ruby-docker-template
     docker:
-      - image: circleci/ruby:2.2.9-jessie
+      - image: circleci/ruby:2.2.10-jessie
   test-2.3:
     <<: *ruby-docker-template
     docker:
-      - image: circleci/ruby:2.3.6-jessie
+      - image: circleci/ruby:2.3.7-jessie
   test-2.4:
     <<: *ruby-docker-template
     docker:
-      - image: circleci/ruby:2.4.4-stretch
+      - image: circleci/ruby:2.4.5-stretch
   test-2.5:
     <<: *ruby-docker-template
     docker:
-      - image: circleci/ruby:2.5.1-stretch
+      - image: circleci/ruby:2.5.3-stretch
   test-jruby-9.2:
     <<: *ruby-docker-template
     docker:
