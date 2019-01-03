@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.summary       = "LaunchDarkly SSE client"
   spec.description   = "LaunchDarkly SSE client for Ruby"
   spec.homepage      = "https://github.com/launchdarkly/ruby-eventsource"
-  spec.license       = "Apache 2.0"
+  spec.license       = "Apache-2.0"
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec_junit_formatter", "~> 0.3.0"
 
-  spec.add_runtime_dependency "concurrent-ruby", "~> 1.0.4"
+  spec.add_runtime_dependency "concurrent-ruby", "~> 1.0"
   spec.add_runtime_dependency "http_tools", '~> 0.4.5'
   spec.add_runtime_dependency "socketry", "~> 0.5.1"
 end
