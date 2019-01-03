@@ -1,0 +1,90 @@
+version: 2
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test-misc-rubies
+      - test-2.2
+      - test-2.3
+      - test-2.4
+      - test-2.5
+      - test-jruby-9.2
+
+ruby-docker-template: &ruby-docker-template
+  steps:
+    - checkout
+    - run: |
+        if [[ $CIRCLE_JOB == test-jruby* ]]; then
+          gem install jruby-openssl; # required by bundler, no effect on Ruby MRI
+        fi
+    - run: ruby -v
+    - run: gem install bundler
+    - run: bundle install
+    - run: mkdir ./rspec
+    - run: bundle exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
+    - store_test_results:
+        path: ./rspec
+    - store_artifacts:
+        path: ./rspec
+
+jobs:
+  test-2.2:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/ruby:2.2.9-jessie
+  test-2.3:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/ruby:2.3.6-jessie
+  test-2.4:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/ruby:2.4.4-stretch
+  test-2.5:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/ruby:2.5.1-stretch
+  test-jruby-9.2:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/jruby:9-jdk
+
+  # The following very slow job uses an Ubuntu container to run the Ruby versions that
+  # CircleCI doesn't provide Docker images for.
+  test-misc-rubies:
+    machine:
+      image: circleci/classic:latest
+    environment:
+      - RUBIES: "jruby-9.1.17.0"
+    steps:
+      - checkout
+      - run:
+          name: install all Ruby versions
+          command: "parallel rvm install ::: $RUBIES"
+      - run:
+          name: bundle install for all versions
+          shell: /bin/bash -leo pipefail # need -l in order for "rvm use" to work
+          command: |
+            set -e;
+            for i in $RUBIES;
+            do
+              rvm use $i;
+              if [[ $i == jruby* ]]; then
+                gem install jruby-openssl; # required by bundler, no effect on Ruby MRI
+              fi
+              gem install bundler;
+              bundle install;
+              mv Gemfile.lock "Gemfile.lock.$i"
+            done
+      - run:
+          name: run tests for all versions
+          shell: /bin/bash -leo pipefail
+          command: |
+            set -e;
+            for i in $RUBIES;
+            do
+              rvm use $i;
+              cp "Gemfile.lock.$i" Gemfile.lock;
+              bundle exec rspec spec;
+            done
