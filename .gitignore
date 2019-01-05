@@ -12,5 +12,4 @@
 *.a
 mkmf.log
 *.gem
-Gemfile.lock
 .DS_Store
