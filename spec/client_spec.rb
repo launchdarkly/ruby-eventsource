@@ -5,11 +5,11 @@ require "http_stub"
 #
 # End-to-end tests of the SSE client against a real server
 #
-describe LaunchDarklySSE::Client do
-  subject { LaunchDarklySSE::Client }
+describe SSE::Client do
+  subject { SSE::Client }
 
-  let(:simple_event_1) { LaunchDarklySSE::StreamEvent.new(:go, "foo", "a")}
-  let(:simple_event_2) { LaunchDarklySSE::StreamEvent.new(:stop, "bar", "b")}
+  let(:simple_event_1) { SSE::StreamEvent.new(:go, "foo", "a")}
+  let(:simple_event_2) { SSE::StreamEvent.new(:stop, "bar", "b")}
   let(:simple_event_1_text) { <<-EOT
 event: go
 data: foo
@@ -136,7 +136,7 @@ EOT
 
       with_client(client) do |client|
         expect(event_sink.pop).to eq(simple_event_1)
-        expect(error_sink.pop).to eq(LaunchDarklySSE::Errors::HTTPStatusError.new(500, "sorry"))
+        expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "sorry"))
         expect(attempt).to eq 2
       end
     end
@@ -167,7 +167,7 @@ EOT
 
       with_client(client) do |client|
         expect(event_sink.pop).to eq(simple_event_1)
-        expect(error_sink.pop).to eq(LaunchDarklySSE::Errors::HTTPContentTypeError.new("text/plain"))
+        expect(error_sink.pop).to eq(SSE::Errors::HTTPContentTypeError.new("text/plain"))
         expect(attempt).to eq 2
       end
     end

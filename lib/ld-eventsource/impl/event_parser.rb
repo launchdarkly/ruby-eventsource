@@ -1,6 +1,6 @@
 require "ld-eventsource/events"
 
-module LaunchDarklySSE
+module SSE
   module Impl
     #
     # Indicates that the SSE server sent a `retry:` field to override the client's reconnection

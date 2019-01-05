@@ -5,8 +5,8 @@ require "http_stub"
 #
 # End-to-end tests of HTTP requests against a real server
 #
-describe LaunchDarklySSE::Impl::StreamingHTTPConnection do
-  subject { LaunchDarklySSE::Impl::StreamingHTTPConnection }
+describe SSE::Impl::StreamingHTTPConnection do
+  subject { SSE::Impl::StreamingHTTPConnection }
 
   def with_connection(cxn)
     begin
@@ -98,7 +98,7 @@ EOT
         sleep(2)
         res.status = 200
       end
-      expect { subject.new(server.base_uri, read_timeout: 0.25) }.to raise_error(LaunchDarklySSE::Errors::ReadTimeoutError)
+      expect { subject.new(server.base_uri, read_timeout: 0.25) }.to raise_error(SSE::Errors::ReadTimeoutError)
     end
   end
 
@@ -125,7 +125,7 @@ EOT
       end
       with_server(StubProxyServer.new) do |proxy|
         proxy.connect_status = 403
-        expect { subject.new(server.base_uri, proxy: proxy.base_uri) }.to raise_error(LaunchDarklySSE::Errors::HTTPProxyError)
+        expect { subject.new(server.base_uri, proxy: proxy.base_uri) }.to raise_error(SSE::Errors::HTTPProxyError)
       end
     end
   end
@@ -154,8 +154,8 @@ end
 #
 # Tests of response parsing functionality without a real HTTP request
 #
-describe LaunchDarklySSE::Impl::HTTPResponseReader do
-  subject { LaunchDarklySSE::Impl::HTTPResponseReader }
+describe SSE::Impl::HTTPResponseReader do
+  subject { SSE::Impl::HTTPResponseReader }
 
   let(:simple_response) { <<-EOT
 HTTP/1.1 200 OK
@@ -258,6 +258,6 @@ EOT
     lines.next
     lines.next
     lines.next
-    expect { lines.next }.to raise_error(LaunchDarklySSE::Errors::ReadTimeoutError)
+    expect { lines.next }.to raise_error(SSE::Errors::ReadTimeoutError)
   end
 end

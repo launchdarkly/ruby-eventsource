@@ -1,5 +1,5 @@
 
-module LaunchDarklySSE
+module SSE
   module Impl
     #
     # A simple backoff algorithm that can reset itself after a given interval has passed without errors.

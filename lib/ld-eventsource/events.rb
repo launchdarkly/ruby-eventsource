@@ -1,5 +1,5 @@
 
-module LaunchDarklySSE
+module SSE
   #
   # Server-Sent Event type used by {Client}. Use {Client#on_event} to receive events.
   #

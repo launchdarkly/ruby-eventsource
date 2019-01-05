@@ -1,5 +1,5 @@
 
-module LaunchDarklySSE
+module SSE
   #
   # Exception classes used by the SSE client.
   #

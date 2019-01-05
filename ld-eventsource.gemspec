@@ -7,7 +7,7 @@ require "ld-eventsource/version"
 # rubocop:disable Metrics/BlockLength
 Gem::Specification.new do |spec|
   spec.name          = "ld-eventsource"
-  spec.version       = LaunchDarklySSE::VERSION
+  spec.version       = SSE::VERSION
   spec.authors       = ["LaunchDarkly"]
   spec.email         = ["team@launchdarkly.com"]
   spec.summary       = "LaunchDarkly SSE client"

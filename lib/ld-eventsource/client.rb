@@ -9,7 +9,7 @@ require "logger"
 require "thread"
 require "uri"
 
-module LaunchDarklySSE
+module SSE
   #
   # A lightweight SSE client implementation. The client uses a worker thread to read from the
   # streaming HTTP connection. Events are dispatched from the same worker thread.
@@ -57,7 +57,7 @@ module LaunchDarklySSE
     # the connection.
     #
     # @example Specifying an event handler at initialization time
-    #     client = LaunchDarklySSE::Client.new(uri) do |c|
+    #     client = SSE::Client.new(uri) do |c|
     #       c.on_event do |event|
     #         puts "I got an event: #{event.type}, #{event.data}"
     #       end
@@ -141,7 +141,7 @@ module LaunchDarklySSE
     #
     # Specifies a block or Proc to receive connection errors. This will be called with a single
     # parameter that is an instance of some exception class-- normally, either some I/O exception or
-    # one of the classes in {LaunchDarklySSE::Errors}. It is called from the same worker thread that
+    # one of the classes in {SSE::Errors}. It is called from the same worker thread that
     # reads the stream, so no more events or errors will be dispatched until it returns.
     #
     # If the error handler decides that this type of error is not recoverable, it has the ability
@@ -173,7 +173,7 @@ module LaunchDarklySSE
     def default_logger
       log = ::Logger.new($stdout)
       log.level = ::Logger::WARN
-      log.progname  = 'LaunchDarklySSE'
+      log.progname  = 'ld-eventsource'
       log
     end
 

@@ -1,7 +1,7 @@
 require "ld-eventsource/impl/event_parser"
 
-describe LaunchDarklySSE::Impl::EventParser do
-  subject { LaunchDarklySSE::Impl::EventParser }
+describe SSE::Impl::EventParser do
+  subject { SSE::Impl::EventParser }
 
   it "parses an event with all fields" do
     lines = [
@@ -12,7 +12,7 @@ describe LaunchDarklySSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
     
-    expected_event = LaunchDarklySSE::StreamEvent.new(:abc, "def", "1")
+    expected_event = SSE::StreamEvent.new(:abc, "def", "1")
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
   end
@@ -24,7 +24,7 @@ describe LaunchDarklySSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
     
-    expected_event = LaunchDarklySSE::StreamEvent.new(:message, "def", nil)
+    expected_event = SSE::StreamEvent.new(:message, "def", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
   end
@@ -37,7 +37,7 @@ describe LaunchDarklySSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
     
-    expected_event = LaunchDarklySSE::StreamEvent.new(:message, "def\nghi", nil)
+    expected_event = SSE::StreamEvent.new(:message, "def\nghi", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
   end
@@ -51,7 +51,7 @@ describe LaunchDarklySSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
     
-    expected_event = LaunchDarklySSE::StreamEvent.new(:message, "def", nil)
+    expected_event = SSE::StreamEvent.new(:message, "def", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
   end
@@ -63,7 +63,7 @@ describe LaunchDarklySSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
 
-    expected_item = LaunchDarklySSE::Impl::SetRetryInterval.new(2500)
+    expected_item = SSE::Impl::SetRetryInterval.new(2500)
     output = ep.items.to_a
     expect(output).to eq([ expected_item ])
   end
@@ -79,8 +79,8 @@ describe LaunchDarklySSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
     
-    expected_event_1 = LaunchDarklySSE::StreamEvent.new(:abc, "def", "1")
-    expected_event_2 = LaunchDarklySSE::StreamEvent.new(:message, "ghi", nil)
+    expected_event_1 = SSE::StreamEvent.new(:abc, "def", "1")
+    expected_event_2 = SSE::StreamEvent.new(:message, "ghi", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event_1, expected_event_2 ])
   end

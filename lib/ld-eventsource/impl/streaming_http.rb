@@ -4,7 +4,7 @@ require "concurrent/atomics"
 require "http_tools"
 require "socketry"
 
-module LaunchDarklySSE
+module SSE
   module Impl
     #
     # Wrapper around a socket providing a simplified HTTP request-response cycle including streaming.
