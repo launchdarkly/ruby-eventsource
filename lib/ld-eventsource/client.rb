@@ -186,9 +186,14 @@ module SSE
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
           return if @stopped.value
           read_stream(@cxn) if !@cxn.nil?
-        rescue Errno::EBADF
-          # Don't log this as an error - it probably means we closed our own connection deliberately
-          @logger.info { "Stream connection closed" }
+        rescue SystemCallError, IOError => e
+          # When we deliberately close the connection, it will usually trigger an exception. The exact type
+          # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
+          if @stopped.value
+            @logger.info { "Stream connection closed" }
+          else
+            log_and_dispatch_error(e, "Unexpected error from event source")
+          end
         rescue StandardError => e
           # This should not be possible because connect catches all StandardErrors
           log_and_dispatch_error(e, "Unexpected error from event source")
