@@ -72,7 +72,9 @@ jobs:
               rvm use $i;
               if [[ $i == jruby* ]]; then
                 gem install jruby-openssl; # required by bundler, no effect on Ruby MRI
-              fi
+              fi;
+              # bundler 2.0 may be preinstalled, we need to remove it if so
+              yes | gem uninstall bundler --version '>=2.0' || true;
               gem install bundler -v "~> 1.17";
               bundle install;
               mv Gemfile.lock "Gemfile.lock.$i"
