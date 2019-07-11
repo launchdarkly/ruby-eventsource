@@ -112,6 +112,29 @@ EOT
     end
   end
 
+  it "does not trigger an error when stream is closed" do
+    events_body = simple_event_1_text + simple_event_2_text
+    with_server do |server|
+      server.setup_response("/") do |req,res|
+        send_stream_content(res, events_body, keep_open: true)
+      end
+
+      event_sink = Queue.new
+      error_sink = Queue.new
+      client = subject.new(server.base_uri) do |c|
+        c.on_event { |event| event_sink << event }
+        c.on_error { |error| error_sink << error }
+      end
+
+      with_client(client) do |client|
+        event_sink.pop  # wait till we have definitely started reading the stream
+        client.close
+        sleep 0.25  # there's no way to really know when the stream thread has finished
+        expect(error_sink.empty?).to be true
+      end
+    end
+  end
+
   it "reconnects after error response" do
     events_body = simple_event_1_text
     with_server do |server|
