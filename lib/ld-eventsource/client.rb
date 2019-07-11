@@ -186,12 +186,14 @@ module SSE
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
           return if @stopped.value
           read_stream(@cxn) if !@cxn.nil?
-        rescue Errno::EBADF
-          # Don't log this as an error - it probably means we closed our own connection deliberately
-          @logger.info { "Stream connection closed" }
-        rescue StandardError => e
-          # This should not be possible because connect catches all StandardErrors
-          log_and_dispatch_error(e, "Unexpected error from event source")
+        rescue => e
+          # When we deliberately close the connection, it will usually trigger an exception. The exact type
+          # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
+          if @stopped.value
+            @logger.info { "Stream connection closed" }
+          else
+            log_and_dispatch_error(e, "Unexpected error from event source")
+          end
         end
         begin
           @cxn.close if !@cxn.nil?
@@ -210,6 +212,7 @@ module SSE
           @logger.info { "Will retry connection after #{'%.3f' % interval} seconds" } 
           sleep(interval)
         end
+        cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
           cxn = Impl::StreamingHTTPConnection.new(@uri,
@@ -235,11 +238,9 @@ module SSE
             err = Errors::HTTPStatusError.new(cxn.status, body)
             @on[:error].call(err)
           end
-        rescue Errno::EBADF
-          raise # See EBADF comment in run_stream
-        rescue StandardError => e
+        rescue
           cxn.close if !cxn.nil?
-          log_and_dispatch_error(e, "Unexpected error from event source")
+          raise  # will be handled in run_stream
         end
         # if unsuccessful, continue the loop to connect again
       end
