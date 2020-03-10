@@ -1,0 +1,9 @@
+
+publications:
+  - url: https://rubygems.org/gems/ld-eventsource
+    description: RubyGems
+  - url: https://www.rubydoc.info/gems/ld-eventsource
+    description: documentation
+
+template:
+  name: ruby
