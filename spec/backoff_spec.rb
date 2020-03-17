@@ -1,0 +1,46 @@
+require "ld-eventsource"
+
+module SSE
+  module Impl
+    describe Backoff do
+      it "increases exponentially with jitter" do
+        initial = 1.5
+        max = 60
+        b = Backoff.new(initial, max)
+        previous = 0
+
+        for i in 1..6 do
+          interval = b.next_interval
+          expect(interval).to be > previous
+          target = initial * (2 ** (i - 1))
+          expect(interval).to be <= target
+          expect(interval).to be >= target / 2
+          previous = i
+        end
+
+        interval = b.next_interval
+        expect(interval).to be >= previous
+        expect(interval).to be <= max
+      end
+
+      it "resets to initial delay if reset threshold has elapsed" do
+        initial = 1.5
+        max = 60
+        threshold = 2
+        b = Backoff.new(initial, max, threshold)
+
+        for i in 1..6 do
+          # just cause the backoff to increase quickly, don't actually do these delays
+          b.next_interval
+        end
+
+        b.mark_success
+        sleep(threshold + 0.001)
+
+        interval = b.next_interval
+        expect(interval).to be <= initial
+        expect(interval).to be >= initial / 2
+      end
+    end
+  end
+end
