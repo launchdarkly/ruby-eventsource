@@ -14,7 +14,7 @@ module SSE
       # @param [Float] reconnect_reset_interval  the interval will be reset to the minimum if this number of
       #   seconds elapses between the last call to {#mark_success} and the next call to {#next_interval}
       #
-      def initialize(base_interval, max_interval, reconnect_reset_interval: 60)
+      def initialize(base_interval, max_interval, reconnect_reset_interval = 60)
         @base_interval = base_interval
         @max_interval = max_interval
         @reconnect_reset_interval = reconnect_reset_interval
@@ -37,10 +37,6 @@ module SSE
         if !@last_good_time.nil?
           good_duration = Time.now.to_f - @last_good_time
           @attempts = 0 if good_duration >= @reconnect_reset_interval
-        end
-        if @attempts == 0
-          @attempts += 1
-          return 0
         end
         @last_good_time = nil
         target = ([@base_interval * (2 ** @attempts), @max_interval].min).to_f
