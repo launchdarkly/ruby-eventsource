@@ -40,6 +40,10 @@ module SSE
         interval = b.next_interval
         expect(interval).to be <= initial
         expect(interval).to be >= initial / 2
+
+        interval = b.next_interval # make sure it continues increasing after that
+        expect(interval).to be <= (initial * 2)
+        expect(interval).to be >= initial
       end
     end
   end
