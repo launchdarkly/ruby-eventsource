@@ -27,7 +27,7 @@ module SSE
         initial = 1.5
         max = 60
         threshold = 2
-        b = Backoff.new(initial, max, threshold)
+        b = Backoff.new(initial, max, reconnect_reset_interval: threshold)
 
         for i in 1..6 do
           # just cause the backoff to increase quickly, don't actually do these delays
