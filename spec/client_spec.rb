@@ -362,7 +362,7 @@ EOT
       with_client(client) do |client|
         expect(event_sink.pop).to eq(simple_event_1)
         interval = request_times[1] - request_times[0]
-        expect(interval).to be < ((retry_ms.to_f / 1000) + 0.1)
+        expect(interval).to be < 0.5
       end
     end
   end
