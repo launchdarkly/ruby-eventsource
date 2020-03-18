@@ -330,7 +330,7 @@ EOT
           expect(event_sink.pop).to eq(simple_event_1)
           if i > 0
             interval = request_times[i] - request_end_times[i - 1]
-            expect(interval).to be <= initial_interval
+            expect(interval).to be <= (initial_interval + 0.1)
           end
         end
       end
