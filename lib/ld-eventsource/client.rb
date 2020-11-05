@@ -116,7 +116,7 @@ module SSE
 
       yield self if block_given?
 
-      Thread.new do
+      @runner = Thread.new do
         run_stream
       end
     end
@@ -155,6 +155,13 @@ module SSE
     #
     def on_error(&action)
       @on[:error] = action
+    end
+
+    #
+    # Waits on the main stream thread
+    #
+    def listen
+      @runner.join
     end
 
     #
