@@ -90,7 +90,8 @@ module SSE
           reconnect_reset_interval: DEFAULT_RECONNECT_RESET_INTERVAL,
           last_event_id: nil,
           proxy: nil,
-          logger: nil)
+          logger: nil,
+          socket_factory: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
 
@@ -98,6 +99,7 @@ module SSE
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
       @logger = logger || default_logger
+      @socket_factory = socket_factory
 
       if proxy
         @proxy = proxy
@@ -106,6 +108,12 @@ module SSE
         if !proxy_uri.nil? && (proxy_uri.scheme == 'http' || proxy_uri.scheme == 'https')
           @proxy = proxy_uri
         end
+      end
+      
+      if socket_factory
+        puts "got socket factory"
+      else
+        puts "no socket factory"
       end
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
@@ -219,7 +227,8 @@ module SSE
             proxy: @proxy,
             headers: build_headers,
             connect_timeout: @connect_timeout,
-            read_timeout: @read_timeout
+            read_timeout: @read_timeout,
+            socket_factory: @socket_factory
           )
           if cxn.status == 200
             content_type = cxn.headers["content-type"]
