@@ -109,12 +109,6 @@ module SSE
           @proxy = proxy_uri
         end
       end
-      
-      if socket_factory
-        puts "got socket factory"
-      else
-        puts "no socket factory"
-      end
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
         reconnect_reset_interval: reconnect_reset_interval)

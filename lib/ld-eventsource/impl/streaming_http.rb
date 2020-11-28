@@ -82,20 +82,17 @@ module SSE
     #
     class HTTPConnectionFactory
       def self.connect(uri, proxy, connect_timeout, read_timeout, socket_factory)
-        socket =
-          if socket_factory
-            Socketry::TCP::Socket.new.from_socket(socket_factory.connect(uri, connect_timeout))
-          else
-            Socketry::TCP::Socket.connect(uri.host, uri.port, timeout: connect_timeout)
-          end
-
-        if proxy
+        socket = if proxy
+          socket = open_socket(proxy, connect_timeout, socket_factory)
           socket.write(build_proxy_request(uri, proxy))
           # temporarily create a reader just for the proxy connect response
           proxy_reader = HTTPResponseReader.new(socket, read_timeout)
           if proxy_reader.status != 200
             raise Errors::HTTPProxyError.new(proxy_reader.status)
           end
+          socket
+        else
+          open_socket(uri, connect_timeout, socket_factory)
         end
 
         # start using TLS at this point if appropriate
@@ -107,6 +104,14 @@ module SSE
       end
 
       private
+      
+      def self.open_socket(uri, connect_timeout, socket_factory)
+        if socket_factory
+          Socketry::TCP::Socket.new.from_socket(socket_factory.connect(uri, connect_timeout))
+        else
+          Socketry::TCP::Socket.connect(uri.host, uri.port, timeout: connect_timeout)
+        end
+      end
 
       # Build a proxy connection header.
       def self.build_proxy_request(uri, proxy)
