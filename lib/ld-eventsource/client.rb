@@ -274,7 +274,7 @@ module SSE
           cxn = @http_client.request("GET", @uri, {
             headers: build_headers
           })
-          if cxn.status == 200
+          if cxn.status.code == 200
             content_type = cxn.headers["content-type"]
             if content_type && content_type.start_with?("text/event-stream")
               return cxn  # we're good to proceed
@@ -287,7 +287,7 @@ module SSE
           else
             body = cxn.to_s  # grab the whole response body in case it has error details
             reset_http
-            @logger.info { "Server returned error status #{cxn.status}" }
+            @logger.info { "Server returned error status #{cxn.status.code}" }
             err = Errors::HTTPStatusError.new(cxn.status.code, body)
             @on[:error].call(err)
           end
