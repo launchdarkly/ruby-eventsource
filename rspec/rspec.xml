@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="rspec" tests="38" skipped="0" failures="0" errors="0" time="16.298120" timestamp="2020-12-11T00:02:58-08:00" hostname="p1">
+<properties>
+<property name="seed" value="53617"/>
+</properties>
+<testcase classname="spec.backoff_spec" name="SSE::Impl::Backoff increases exponentially with jitter" file="./spec/backoff_spec.rb" time="0.000777"></testcase>
+<testcase classname="spec.backoff_spec" name="SSE::Impl::Backoff resets to initial delay if reset threshold has elapsed" file="./spec/backoff_spec.rb" time="2.001374"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client sends expected headers" file="./spec/client_spec.rb" time="0.972858"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client sends initial Last-Event-Id if specified" file="./spec/client_spec.rb" time="0.894238"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client receives messages" file="./spec/client_spec.rb" time="0.899754"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client does not trigger an error when stream is closed" file="./spec/client_spec.rb" time="1.176799"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client reconnects after error response" file="./spec/client_spec.rb" time="0.027536"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client reconnects after invalid content type" file="./spec/client_spec.rb" time="0.031231"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client reconnects after read timeout" file="./spec/client_spec.rb" time="0.280246"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client reconnects if stream returns EOF" file="./spec/client_spec.rb" time="0.027111"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client sends ID of last received event, if any, when reconnecting" file="./spec/client_spec.rb" time="0.027059"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client increases backoff delay if a failure happens within the reset threshold" file="./spec/client_spec.rb" time="6.229622"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client resets backoff delay if a failure happens after the reset threshold" file="./spec/client_spec.rb" time="2.150394"></testcase>
+<testcase classname="spec.client_spec" name="SSE::Client can change initial reconnect delay based on directive from server" file="./spec/client_spec.rb" time="1.069694"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser parses an event with all fields" file="./spec/event_parser_spec.rb" time="0.000102"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser parses an event with only data" file="./spec/event_parser_spec.rb" time="0.000045"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser parses an event with multi-line data" file="./spec/event_parser_spec.rb" time="0.000043"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser ignores comments" file="./spec/event_parser_spec.rb" time="0.000041"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser parses reconnect interval" file="./spec/event_parser_spec.rb" time="0.000113"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser parses multiple events" file="./spec/event_parser_spec.rb" time="0.000070"></testcase>
+<testcase classname="spec.event_parser_spec" name="SSE::Impl::EventParser ignores events with no data" file="./spec/event_parser_spec.rb" time="0.000066"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection makes HTTP connection and sends request" file="./spec/streaming_http_spec.rb" time="0.000901"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection receives response status" file="./spec/streaming_http_spec.rb" time="0.000806"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection receives response headers" file="./spec/streaming_http_spec.rb" time="0.000798"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection can read response as lines" file="./spec/streaming_http_spec.rb" time="0.000857"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection can read entire response body" file="./spec/streaming_http_spec.rb" time="0.000922"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection enforces read timeout" file="./spec/streaming_http_spec.rb" time="0.251449"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection connects to HTTP server through proxy" file="./spec/streaming_http_spec.rb" time="0.005515"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection throws error if proxy responds with error status" file="./spec/streaming_http_spec.rb" time="0.002142"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection connects to HTTPS server" file="./spec/streaming_http_spec.rb" time="0.121574"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::StreamingHTTPConnection connects to HTTPS server through proxy" file="./spec/streaming_http_spec.rb" time="0.111496"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader parses status code" file="./spec/streaming_http_spec.rb" time="0.004866"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader parses headers" file="./spec/streaming_http_spec.rb" time="0.000298"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader can read entire response body" file="./spec/streaming_http_spec.rb" time="0.000350"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader can read response body as lines" file="./spec/streaming_http_spec.rb" time="0.000316"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader handles chunked encoding" file="./spec/streaming_http_spec.rb" time="0.000330"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader raises error if response ends without complete headers" file="./spec/streaming_http_spec.rb" time="0.001421"></testcase>
+<testcase classname="spec.streaming_http_spec" name="SSE::Impl::HTTPResponseReader throws timeout if thrown by socket read" file="./spec/streaming_http_spec.rb" time="0.000477"></testcase>
+</testsuite>

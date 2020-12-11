@@ -62,8 +62,11 @@ EOT
         expect(received_req.header).to eq({
           "accept" => ["text/event-stream"],
           "cache-control" => ["no-cache"],
-          "host" => ["127.0.0.1"],
-          "authorization" => ["secret"]
+          "host" => ["127.0.0.1:" + server.port.to_s],
+          "authorization" => ["secret"],
+          "user-agent" => ["ruby-eventsource"],
+          "content-length" => ["0"],
+          "connection" => ["close"]
         })
       end
     end
@@ -85,9 +88,12 @@ EOT
         expect(received_req.header).to eq({
           "accept" => ["text/event-stream"],
           "cache-control" => ["no-cache"],
-          "host" => ["127.0.0.1"],
+          "host" => ["127.0.0.1:" + server.port.to_s],
           "authorization" => ["secret"],
-          "last-event-id" => [id]
+          "last-event-id" => [id],
+          "user-agent" => ["ruby-eventsource"],
+          "content-length" => ["0"],
+          "connection" => ["close"]
         })
       end
     end

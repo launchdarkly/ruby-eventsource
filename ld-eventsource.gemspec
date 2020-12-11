@@ -27,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "concurrent-ruby", "~> 1.0"
   spec.add_runtime_dependency "http_tools", '~> 0.4.5'
   spec.add_runtime_dependency "socketry", "~> 0.5.1"
+  spec.add_runtime_dependency "http", "~> 4.4.1"
 end

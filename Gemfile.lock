@@ -3,17 +3,37 @@ PATH
   specs:
     ld-eventsource (1.0.3)
       concurrent-ruby (~> 1.0)
+      http (~> 4.4.1)
       http_tools (~> 0.4.5)
       socketry (~> 0.5.1)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    concurrent-ruby (1.1.6)
+    addressable (2.7.0)
+      public_suffix (>= 2.0.2, < 5.0)
+    concurrent-ruby (1.1.7)
     diff-lcs (1.3)
+    domain_name (0.5.20190701)
+      unf (>= 0.0.5, < 1.0.0)
+    ffi (1.13.1)
+    ffi-compiler (1.0.1)
+      ffi (>= 1.0.0)
+      rake
     hitimes (1.3.1)
-    hitimes (1.3.1-java)
+    http (4.4.1)
+      addressable (~> 2.3)
+      http-cookie (~> 1.0)
+      http-form_data (~> 2.2)
+      http-parser (~> 1.2.0)
+    http-cookie (1.0.3)
+      domain_name (~> 0.5)
+    http-form_data (2.3.0)
+    http-parser (1.2.2)
+      ffi-compiler
     http_tools (0.4.5)
+    public_suffix (4.0.6)
+    rake (13.0.1)
     rspec (3.7.0)
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
@@ -31,6 +51,9 @@ GEM
       rspec-core (>= 2, < 4, != 2.12.0)
     socketry (0.5.1)
       hitimes (~> 1.2)
+    unf (0.1.4)
+      unf_ext
+    unf_ext (0.0.7.7)
 
 PLATFORMS
   java

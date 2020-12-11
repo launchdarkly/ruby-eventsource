@@ -8,6 +8,7 @@ require "concurrent/atomics"
 require "logger"
 require "thread"
 require "uri"
+require "http"
 
 module SSE
   #
@@ -98,6 +99,13 @@ module SSE
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
       @logger = logger || default_logger
+      @http_client = HTTP::Client.new()
+        .timeout({
+          read: read_timeout,
+          connect: connect_timeout
+        })
+      @buffer = ""
+      @lock = Mutex.new
 
       if proxy
         @proxy = proxy
@@ -163,12 +171,51 @@ module SSE
     #
     def close
       if @stopped.make_true
-        @cxn.close if !@cxn.nil?
+        # @cxn.close if !@cxn.nil?
         @cxn = nil
       end
     end
 
     private
+    
+    def read_lines
+      Enumerator.new do |gen|
+        loop do
+          line = read_line
+          break if line.nil?
+          gen.yield line
+        end
+      end
+    end
+    
+    def read_line
+      loop do
+        @lock.synchronize do
+          i = @buffer.index(/[\r\n]/)
+          if !i.nil?
+            i += 1 if (@buffer[i] == "\r" && i < @buffer.length - 1 && @buffer[i + 1] == "\n")
+            return @buffer.slice!(0, i + 1).force_encoding(Encoding::UTF_8)
+          end
+        end
+        return nil if !read_chunk_into_buffer
+      end
+    end
+    
+    def read_chunk_into_buffer
+      # If @done is set, it means the Parser has signaled end of response body
+      @lock.synchronize { return false if @done }
+      begin
+        data = @cxn.readpartial
+      rescue HTTP::TimeoutError 
+        # We rethrow this as our own type so the caller doesn't have to know the Socketry API
+        raise Errors::ReadTimeoutError.new(@read_timeout)
+      end
+      return false if data == nil
+      @buffer << data
+      # We are piping the content through the parser so that it can handle things like chunked
+      # encoding for us. The content ends up being appended to @buffer via our callback.
+      true
+    end
 
     def default_logger
       log = ::Logger.new($stdout)
@@ -196,7 +243,7 @@ module SSE
           end
         end
         begin
-          @cxn.close if !@cxn.nil?
+          # @cxn.close if !@cxn.nil?
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
@@ -215,31 +262,36 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          cxn = Impl::StreamingHTTPConnection.new(@uri,
-            proxy: @proxy,
-            headers: build_headers,
-            connect_timeout: @connect_timeout,
-            read_timeout: @read_timeout
-          )
+          puts "requesting"
+          cxn = @http_client.request("GET", @uri, {
+            headers: build_headers
+          })
+          puts "post requesting"
+          #cxn = Impl::StreamingHTTPConnection.new(@uri,
+          #  proxy: @proxy,
+          #  headers: build_headers,
+         #    connect_timeout: @connect_timeout,
+          #  read_timeout: @read_timeout
+          #)
           if cxn.status == 200
             content_type = cxn.headers["content-type"]
             if content_type && content_type.start_with?("text/event-stream")
               return cxn  # we're good to proceed
             else
-              cxn.close
+              # cxn.close
               err = Errors::HTTPContentTypeError.new(cxn.headers["content-type"])
               @on[:error].call(err)
               @logger.warn { "Event source returned unexpected content type '#{cxn.headers["content-type"]}'" }
             end
           else
-            body = cxn.read_all  # grab the whole response body in case it has error details
-            cxn.close
+            body = cxn.to_s  # grab the whole response body in case it has error details
+            # cxn.close
             @logger.info { "Server returned error status #{cxn.status}" }
-            err = Errors::HTTPStatusError.new(cxn.status, body)
+            err = Errors::HTTPStatusError.new(cxn.status.code, body)
             @on[:error].call(err)
           end
         rescue
-          cxn.close if !cxn.nil?
+          # cxn.close if !cxn.nil?
           raise  # will be handled in run_stream
         end
         # if unsuccessful, continue the loop to connect again
@@ -253,7 +305,7 @@ module SSE
       # it can automatically reset itself if enough time passes between failures.
       @backoff.mark_success
 
-      event_parser = Impl::EventParser.new(cxn.read_lines)
+      event_parser = Impl::EventParser.new(read_lines)
       event_parser.items.each do |item|
         return if @stopped.value
         case item
@@ -288,7 +340,8 @@ module SSE
     def build_headers
       h = {
         'Accept' => 'text/event-stream',
-        'Cache-Control' => 'no-cache'
+        'Cache-Control' => 'no-cache',
+        'User-Agent' => 'ruby-eventsource'
       }
       h['Last-Event-Id'] = @last_id if !@last_id.nil?
       h.merge(@headers)
