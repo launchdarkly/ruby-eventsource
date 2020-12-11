@@ -1,6 +1,5 @@
 require "ld-eventsource/impl/backoff"
 require "ld-eventsource/impl/event_parser"
-require "ld-eventsource/impl/streaming_http"
 require "ld-eventsource/events"
 require "ld-eventsource/errors"
 
