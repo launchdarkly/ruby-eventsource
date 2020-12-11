@@ -53,6 +53,7 @@ GEM
       hitimes (~> 1.2)
     unf (0.1.4)
       unf_ext
+    unf (0.1.4-java)
     unf_ext (0.0.7.7)
 
 PLATFORMS
