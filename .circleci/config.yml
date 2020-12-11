@@ -13,6 +13,7 @@ workflows:
 ruby-docker-template: &ruby-docker-template
   steps:
     - checkout
+    - run: apt-get update -y && apt-get install -y build-essential
     - run: |
         if [[ $CIRCLE_JOB == test-jruby* ]]; then
           gem install jruby-openssl; # required by bundler, no effect on Ruby MRI
