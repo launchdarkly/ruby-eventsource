@@ -13,3 +13,4 @@
 mkmf.log
 *.gem
 .DS_Store
+rspec
