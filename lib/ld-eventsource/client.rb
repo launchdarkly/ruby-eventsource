@@ -90,7 +90,8 @@ module SSE
           reconnect_reset_interval: DEFAULT_RECONNECT_RESET_INTERVAL,
           last_event_id: nil,
           proxy: nil,
-          logger: nil)
+          logger: nil,
+          socket_factory: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
 
@@ -98,7 +99,11 @@ module SSE
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
       @logger = logger || default_logger
-      @http_client = HTTP::Client.new()
+      http_client_options = {}
+      if socket_factory
+        http_client_options["socket_class"] = socket_factory
+      end
+      @http_client = HTTP::Client.new(http_client_options)
         .timeout({
           read: read_timeout,
           connect: connect_timeout
