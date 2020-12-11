@@ -170,12 +170,17 @@ module SSE
     #
     def close
       if @stopped.make_true
-        # @cxn.close if !@cxn.nil?
-        @cxn = nil
+        reset_http
       end
     end
 
     private
+    
+    def reset_http
+      @http_client.close if !@http_client.nil?
+      @cxn = nil
+      @buffer = ""
+    end
     
     def read_lines
       Enumerator.new do |gen|
@@ -242,7 +247,7 @@ module SSE
           end
         end
         begin
-          # @cxn.close if !@cxn.nil?
+          reset_http
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
@@ -261,36 +266,28 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          puts "requesting"
           cxn = @http_client.request("GET", @uri, {
             headers: build_headers
           })
-          puts "post requesting"
-          #cxn = Impl::StreamingHTTPConnection.new(@uri,
-          #  proxy: @proxy,
-          #  headers: build_headers,
-         #    connect_timeout: @connect_timeout,
-          #  read_timeout: @read_timeout
-          #)
           if cxn.status == 200
             content_type = cxn.headers["content-type"]
             if content_type && content_type.start_with?("text/event-stream")
               return cxn  # we're good to proceed
             else
-              # cxn.close
+              reset_http
               err = Errors::HTTPContentTypeError.new(cxn.headers["content-type"])
               @on[:error].call(err)
               @logger.warn { "Event source returned unexpected content type '#{cxn.headers["content-type"]}'" }
             end
           else
             body = cxn.to_s  # grab the whole response body in case it has error details
-            # cxn.close
+            reset_http
             @logger.info { "Server returned error status #{cxn.status}" }
             err = Errors::HTTPStatusError.new(cxn.status.code, body)
             @on[:error].call(err)
           end
         rescue
-          # cxn.close if !cxn.nil?
+          reset_http
           raise  # will be handled in run_stream
         end
         # if unsuccessful, continue the loop to connect again
