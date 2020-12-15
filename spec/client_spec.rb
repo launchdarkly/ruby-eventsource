@@ -344,6 +344,7 @@ EOT
   end
 
   it "can change initial reconnect delay based on directive from server" do
+    puts "running test 1"
     request_times = []
     configured_interval = 1
     retry_ms = 100
@@ -374,10 +375,11 @@ EOT
   end
 
   it "connects to HTTP server through proxy" do
+    puts "running test 1"
     events_body = simple_event_1_text
     with_server do |server|
       server.setup_response("/") do |req,res|
-        send_stream_content(res, events_body, keep_open: true)
+        send_stream_content(res, events_body, keep_open: false)
       end
       with_server(StubProxyServer.new) do |proxy|
         event_sink = Queue.new
