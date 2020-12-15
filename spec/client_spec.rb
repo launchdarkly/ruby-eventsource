@@ -372,4 +372,24 @@ EOT
       end
     end
   end
+
+  it "connects to HTTP server through proxy" do
+    events_body = simple_event_1_text
+    with_server do |server|
+      server.setup_response("/") do |req,res|
+        send_stream_content(res, events_body, keep_open: true)
+      end
+      with_server(StubProxyServer.new) do |proxy|
+        event_sink = Queue.new
+        client = subject.new(server.base_uri, proxy: proxy.base_uri) do |c|
+          c.on_event { |event| event_sink << event }
+        end
+
+        with_client(client) do |client|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(proxy.request_count).to eq(1)
+        end
+      end
+    end
+  end
 end

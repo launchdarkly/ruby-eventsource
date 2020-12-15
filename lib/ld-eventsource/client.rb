@@ -103,14 +103,7 @@ module SSE
       if socket_factory
         http_client_options["socket_class"] = socket_factory
       end
-      @http_client = HTTP::Client.new(http_client_options)
-        .timeout({
-          read: read_timeout,
-          connect: connect_timeout
-        })
-      @buffer = ""
-      @lock = Mutex.new
-
+      
       if proxy
         @proxy = proxy
       else
@@ -119,6 +112,21 @@ module SSE
           @proxy = proxy_uri
         end
       end
+
+      if @proxy
+        http_client_options["proxy"] = {
+          :proxy_address => @proxy.host,
+          :proxy_port => @proxy.port
+        }
+      end
+
+      @http_client = HTTP::Client.new(http_client_options)
+        .timeout({
+          read: read_timeout,
+          connect: connect_timeout
+        })
+      @buffer = ""
+      @lock = Mutex.new
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
         reconnect_reset_interval: reconnect_reset_interval)
