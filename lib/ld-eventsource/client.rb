@@ -209,8 +209,8 @@ module SSE
       loop do
         @lock.synchronize do
           i = @buffer.index(/[\r\n]/)
-          if !i.nil?
-            i += 1 if (@buffer[i] == "\r" && i < @buffer.length - 1 && @buffer[i + 1] == "\n")
+          if !i.nil? && !(i == @buffer.length - 1 && @buffer[i] == "\r")
+            i += 1 if (@buffer[i] == "\r" && @buffer[i + 1] == "\n")
             return @buffer.slice!(0, i + 1).force_encoding(Encoding::UTF_8)
           end
         end
