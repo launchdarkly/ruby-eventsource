@@ -80,6 +80,9 @@ module SSE
     #   proxy with the `HTTP_PROXY` or `HTTPS_PROXY` environment variable)
     # @param logger [Logger]  a Logger instance for the client to use for diagnostic output;
     #   defaults to a logger with WARN level that goes to standard output
+    # @param socket_factory [#open] (nil)  an optional factory object for creating sockets,
+    #   if you want to use something other than the default `TCPSocket`; it must implement
+    #   `open(uri, timeout)` to return a connected `Socket`
     # @yieldparam [Client] client  the new client instance, before opening the connection
     # 
     def initialize(uri,
