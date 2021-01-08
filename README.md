@@ -10,7 +10,7 @@ Parts of this code are based on https://github.com/Tonkpils/celluloid-eventsourc
 Supported Ruby versions
 -----------------------
 
-This gem has a minimum Ruby version of 2.2.6, or 9.1.6 for JRuby.
+This gem has a minimum Ruby version of 2.4, or 9.2 for JRuby.
 
 Quick setup
 -----------
