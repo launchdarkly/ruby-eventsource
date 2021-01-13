@@ -392,25 +392,25 @@ EOT
   end
 
   it "resets read timeout between events" do
-    events_body = simple_event_1_text
+    event_body = simple_event_1_text
     with_server do |server|
       attempt = 0
       server.setup_response("/") do |req,res|
         attempt += 1
         if attempt == 1
-          stream = send_stream_content(res, events_body, keep_open: true)
+          stream = send_stream_content(res, event_body, keep_open: true)
           Thread.new do
             2.times {
               # write within timeout interval
               sleep(0.75)
-              stream.write(events_body)
+              stream.write(event_body)
             }
             # cause timeout
             sleep(1.25)
             stream.close
           end
         else
-           send_stream_content(res, events_body, keep_open: false)
+          send_stream_content(res, event_body, keep_open: false)
         end
       end
 
