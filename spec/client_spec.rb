@@ -407,7 +407,6 @@ EOT
             }
             # cause timeout
             sleep(1.25)
-            stream.close
           end
         elsif attempt == 2
           send_stream_content(res, event_body, keep_open: false)
