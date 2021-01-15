@@ -395,7 +395,6 @@ EOT
     event_body = simple_event_1_text
     with_server do |server|
       attempt = 0
-      correctly_closed = true
       server.setup_response("/") do |req,res|
         attempt += 1
         if attempt == 1
@@ -408,8 +407,6 @@ EOT
             }
             # cause timeout
             sleep(1.25)
-            # should never get here
-            correctly_closed = false
             stream.close
           end
         elsif attempt == 2
@@ -427,7 +424,6 @@ EOT
           expect(event_sink.pop).to eq(simple_event_1)
         }
         expect(attempt).to eq 2
-        expect(correctly_closed).to eq true
       end
     end
   end
