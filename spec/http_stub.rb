@@ -3,6 +3,8 @@ require "webrick/httpproxy"
 require "webrick/https"
 
 class StubHTTPServer
+  attr_reader :port
+
   def initialize
     @port = 50000
     begin

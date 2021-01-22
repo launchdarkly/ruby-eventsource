@@ -1,5 +1,7 @@
 require "ld-eventsource"
 
+require "http_stub"
+
 module SSE
   module Impl
     describe Backoff do
