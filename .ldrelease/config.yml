@@ -1,3 +1,5 @@
+repo:
+  public: ruby-eventsource
 
 publications:
   - url: https://rubygems.org/gems/ld-eventsource
