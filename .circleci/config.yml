@@ -7,6 +7,7 @@ workflows:
       - test-2.5
       - test-2.6
       - test-2.7
+      - test-3.0
       - test-jruby-9.2
 
 ruby-docker-template: &ruby-docker-template
@@ -40,6 +41,10 @@ jobs:
     <<: *ruby-docker-template
     docker:
       - image: circleci/ruby:2.7
+  test-3.0:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/ruby:3.0
   test-jruby-9.2:
     <<: *ruby-docker-template
     docker:
