@@ -50,6 +50,7 @@ GEM
       unf_ext
     unf (0.1.4-java)
     unf_ext (0.0.7.7)
+    webrick (1.7.0)
 
 PLATFORMS
   java
@@ -60,6 +61,7 @@ DEPENDENCIES
   ld-eventsource!
   rspec (~> 3.2)
   rspec_junit_formatter (~> 0.3.0)
+  webrick (~> 1.7)
 
 BUNDLED WITH
    1.17.3

@@ -4,10 +4,10 @@ workflows:
   version: 2
   test:
     jobs:
-      - test-2.4
       - test-2.5
       - test-2.6
       - test-2.7
+      - test-3.0
       - test-jruby-9.2
 
 ruby-docker-template: &ruby-docker-template
@@ -29,10 +29,6 @@ ruby-docker-template: &ruby-docker-template
         path: ./rspec
 
 jobs:
-  test-2.4:
-    <<: *ruby-docker-template
-    docker:
-      - image: circleci/ruby:2.4
   test-2.5:
     <<: *ruby-docker-template
     docker:
@@ -45,6 +41,10 @@ jobs:
     <<: *ruby-docker-template
     docker:
       - image: circleci/ruby:2.7
+  test-3.0:
+    <<: *ruby-docker-template
+    docker:
+      - image: circleci/ruby:3.0
   test-jruby-9.2:
     <<: *ruby-docker-template
     docker:
