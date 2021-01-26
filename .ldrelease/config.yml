@@ -7,5 +7,11 @@ publications:
   - url: https://www.rubydoc.info/gems/ld-eventsource
     description: documentation
 
+releasableBranches:
+  - name: master
+    description: 2.x - based on the http gem
+  - name: 1.x
+    description: 1.x - based on the socketry gem
+
 template:
   name: ruby
