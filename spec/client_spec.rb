@@ -1,6 +1,4 @@
 require "ld-eventsource"
-require "socketry"
-require "http_stub"
 
 #
 # End-to-end tests of the SSE client against a real server
@@ -62,8 +60,11 @@ EOT
         expect(received_req.header).to eq({
           "accept" => ["text/event-stream"],
           "cache-control" => ["no-cache"],
-          "host" => ["127.0.0.1"],
-          "authorization" => ["secret"]
+          "host" => ["127.0.0.1:" + server.port.to_s],
+          "authorization" => ["secret"],
+          "user-agent" => ["ruby-eventsource"],
+          "content-length" => ["0"],
+          "connection" => ["close"]
         })
       end
     end
@@ -85,9 +86,12 @@ EOT
         expect(received_req.header).to eq({
           "accept" => ["text/event-stream"],
           "cache-control" => ["no-cache"],
-          "host" => ["127.0.0.1"],
+          "host" => ["127.0.0.1:" + server.port.to_s],
           "authorization" => ["secret"],
-          "last-event-id" => [id]
+          "last-event-id" => [id],
+          "user-agent" => ["ruby-eventsource"],
+          "content-length" => ["0"],
+          "connection" => ["close"]
         })
       end
     end
@@ -363,6 +367,62 @@ EOT
         expect(event_sink.pop).to eq(simple_event_1)
         interval = request_times[1] - request_times[0]
         expect(interval).to be < 0.5
+      end
+    end
+  end
+
+  it "connects to HTTP server through proxy" do
+    events_body = simple_event_1_text
+    with_server do |server|
+      server.setup_response("/") do |req,res|
+        send_stream_content(res, events_body, keep_open: false)
+      end
+      with_server(StubProxyServer.new) do |proxy|
+        event_sink = Queue.new
+        client = subject.new(server.base_uri, proxy: proxy.base_uri) do |c|
+          c.on_event { |event| event_sink << event }
+        end
+
+        with_client(client) do |client|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(proxy.request_count).to eq(1)
+        end
+      end
+    end
+  end
+
+  it "resets read timeout between events" do
+    event_body = simple_event_1_text
+    with_server do |server|
+      attempt = 0
+      server.setup_response("/") do |req,res|
+        attempt += 1
+        if attempt == 1
+          stream = send_stream_content(res, event_body, keep_open: true)
+          Thread.new do
+            2.times {
+              # write within timeout interval
+              sleep(0.75)
+              stream.write(event_body)
+            }
+            # cause timeout
+            sleep(1.25)
+          end
+        elsif attempt == 2
+          send_stream_content(res, event_body, keep_open: false)
+        end
+      end
+
+      event_sink = Queue.new
+      client = subject.new(server.base_uri, reconnect_time: reconnect_asap, read_timeout: 1) do |c|
+        c.on_event { |event| event_sink << event }
+      end
+
+      with_client(client) do |client|
+        4.times {
+          expect(event_sink.pop).to eq(simple_event_1)
+        }
+        expect(attempt).to eq 2
       end
     end
   end

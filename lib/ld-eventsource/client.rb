@@ -1,6 +1,5 @@
 require "ld-eventsource/impl/backoff"
 require "ld-eventsource/impl/event_parser"
-require "ld-eventsource/impl/streaming_http"
 require "ld-eventsource/events"
 require "ld-eventsource/errors"
 
@@ -8,6 +7,7 @@ require "concurrent/atomics"
 require "logger"
 require "thread"
 require "uri"
+require "http"
 
 module SSE
   #
@@ -80,6 +80,9 @@ module SSE
     #   proxy with the `HTTP_PROXY` or `HTTPS_PROXY` environment variable)
     # @param logger [Logger]  a Logger instance for the client to use for diagnostic output;
     #   defaults to a logger with WARN level that goes to standard output
+    # @param socket_factory [#open] (nil)  an optional factory object for creating sockets,
+    #   if you want to use something other than the default `TCPSocket`; it must implement
+    #   `open(uri, timeout)` to return a connected `Socket`
     # @yieldparam [Client] client  the new client instance, before opening the connection
     # 
     def initialize(uri,
@@ -90,7 +93,8 @@ module SSE
           reconnect_reset_interval: DEFAULT_RECONNECT_RESET_INTERVAL,
           last_event_id: nil,
           proxy: nil,
-          logger: nil)
+          logger: nil,
+          socket_factory: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
 
@@ -98,7 +102,11 @@ module SSE
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
       @logger = logger || default_logger
-
+      http_client_options = {}
+      if socket_factory
+        http_client_options["socket_class"] = socket_factory
+      end
+      
       if proxy
         @proxy = proxy
       else
@@ -107,6 +115,21 @@ module SSE
           @proxy = proxy_uri
         end
       end
+
+      if @proxy
+        http_client_options["proxy"] = {
+          :proxy_address => @proxy.host,
+          :proxy_port => @proxy.port
+        }
+      end
+
+      @http_client = HTTP::Client.new(http_client_options)
+        .timeout({
+          read: read_timeout,
+          connect: connect_timeout
+        })
+      @buffer = ""
+      @lock = Mutex.new
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
         reconnect_reset_interval: reconnect_reset_interval)
@@ -163,12 +186,56 @@ module SSE
     #
     def close
       if @stopped.make_true
-        @cxn.close if !@cxn.nil?
-        @cxn = nil
+        reset_http
       end
     end
 
     private
+    
+    def reset_http
+      @http_client.close if !@http_client.nil?
+      @cxn = nil
+      @buffer = ""
+    end
+    
+    def read_lines
+      Enumerator.new do |gen|
+        loop do
+          line = read_line
+          break if line.nil?
+          gen.yield line
+        end
+      end
+    end
+    
+    def read_line
+      loop do
+        @lock.synchronize do
+          i = @buffer.index(/[\r\n]/)
+          if !i.nil? && !(i == @buffer.length - 1 && @buffer[i] == "\r")
+            i += 1 if (@buffer[i] == "\r" && @buffer[i + 1] == "\n")
+            return @buffer.slice!(0, i + 1).force_encoding(Encoding::UTF_8)
+          end
+        end
+        return nil if !read_chunk_into_buffer
+      end
+    end
+    
+    def read_chunk_into_buffer
+      # If @done is set, it means the Parser has signaled end of response body
+      @lock.synchronize { return false if @done }
+      begin
+        data = @cxn.readpartial
+      rescue HTTP::TimeoutError 
+        # We rethrow this as our own type so the caller doesn't have to know the httprb API
+        raise Errors::ReadTimeoutError.new(@read_timeout)
+      end
+      return false if data == nil
+      @buffer << data
+      # We are piping the content through the parser so that it can handle things like chunked
+      # encoding for us. The content ends up being appended to @buffer via our callback.
+      true
+    end
 
     def default_logger
       log = ::Logger.new($stdout)
@@ -196,7 +263,7 @@ module SSE
           end
         end
         begin
-          @cxn.close if !@cxn.nil?
+          reset_http
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
@@ -215,31 +282,28 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          cxn = Impl::StreamingHTTPConnection.new(@uri,
-            proxy: @proxy,
-            headers: build_headers,
-            connect_timeout: @connect_timeout,
-            read_timeout: @read_timeout
-          )
-          if cxn.status == 200
+          cxn = @http_client.request("GET", @uri, {
+            headers: build_headers
+          })
+          if cxn.status.code == 200
             content_type = cxn.headers["content-type"]
             if content_type && content_type.start_with?("text/event-stream")
               return cxn  # we're good to proceed
             else
-              cxn.close
+              reset_http
               err = Errors::HTTPContentTypeError.new(cxn.headers["content-type"])
               @on[:error].call(err)
               @logger.warn { "Event source returned unexpected content type '#{cxn.headers["content-type"]}'" }
             end
           else
-            body = cxn.read_all  # grab the whole response body in case it has error details
-            cxn.close
-            @logger.info { "Server returned error status #{cxn.status}" }
-            err = Errors::HTTPStatusError.new(cxn.status, body)
+            body = cxn.to_s  # grab the whole response body in case it has error details
+            reset_http
+            @logger.info { "Server returned error status #{cxn.status.code}" }
+            err = Errors::HTTPStatusError.new(cxn.status.code, body)
             @on[:error].call(err)
           end
         rescue
-          cxn.close if !cxn.nil?
+          reset_http
           raise  # will be handled in run_stream
         end
         # if unsuccessful, continue the loop to connect again
@@ -253,7 +317,7 @@ module SSE
       # it can automatically reset itself if enough time passes between failures.
       @backoff.mark_success
 
-      event_parser = Impl::EventParser.new(cxn.read_lines)
+      event_parser = Impl::EventParser.new(read_lines)
       event_parser.items.each do |item|
         return if @stopped.value
         case item
@@ -288,7 +352,8 @@ module SSE
     def build_headers
       h = {
         'Accept' => 'text/event-stream',
-        'Cache-Control' => 'no-cache'
+        'Cache-Control' => 'no-cache',
+        'User-Agent' => 'ruby-eventsource'
       }
       h['Last-Event-Id'] = @last_id if !@last_id.nil?
       h.merge(@headers)
