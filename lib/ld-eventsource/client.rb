@@ -190,6 +190,10 @@ module SSE
       end
     end
 
+    def is_alive?
+      !@stopped.value
+    end
+
     private
     
     def reset_http
