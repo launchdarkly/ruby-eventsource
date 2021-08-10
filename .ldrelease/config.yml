@@ -13,5 +13,10 @@ releasableBranches:
   - name: 1.x
     description: 1.x - based on the socketry gem
 
+circleci:
+  linux:
+    image: cimg/ruby:2.5
+    context: org-global
+
 template:
   name: ruby
