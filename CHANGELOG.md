@@ -2,6 +2,12 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.0.1] - 2021-08-10
+### Changed:
+- The dependency version constraint for the `http` gem is now looser: it allows 5.x versions as well as 4.x. The breaking changes in `http` v5.0.0 do not affect `ld-eventsource`.
+- The project&#39;s build now uses v2.2.10 of `bundler` due to known vulnerabilities in other versions.
+- `Gemfile.lock` has been removed from source control. As this is a library project, the lockfile never affected application code that used this gem, but only affected the gem&#39;s own CI build. It is preferable for the CI build to refer only to the gemspec so that it resolves dependencies the same way an application using this gem would, rather than using pinned dependencies that an application would not use.
+
 ## [2.0.0] - 2021-01-26
 ### Added:
 - Added a `socket_factory` configuration option which can be used for socket creation by the HTTP client if provided. The value of `socket_factory` must be an object providing an `open(uri, timeout)` method and returning a connected socket.
