@@ -26,5 +26,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "webrick", "~> 1.7"
 
   spec.add_runtime_dependency "concurrent-ruby", "~> 1.0"
-  spec.add_runtime_dependency "http", "~> 4.4.1"
+  spec.add_runtime_dependency "http", ">= 4.4.1", "< 6.0.0"
 end
