@@ -19,7 +19,7 @@ ruby-docker-template: &ruby-docker-template
         fi
     - run: sudo apt-get update -y && sudo apt-get install -y build-essential
     - run: ruby -v
-    - run: gem install bundler -v "~> 1.17"
+    - run: gem install bundler -v 2.2.10
     - run: bundle install
     - run: mkdir ./rspec
     - run: bundle exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
