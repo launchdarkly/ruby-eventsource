@@ -1,51 +1,51 @@
-version: 2
+version: 2.1
 
 workflows:
   version: 2
   test:
     jobs:
-      - test-2.5
-      - test-2.6
-      - test-2.7
-      - test-3.0
-      - test-jruby-9.2
-
-ruby-docker-template: &ruby-docker-template
-  steps:
-    - checkout
-    - run: |
-        if [[ $CIRCLE_JOB == test-jruby* ]]; then
-          gem install jruby-openssl; # required by bundler, no effect on Ruby MRI
-        fi
-    - run: sudo apt-get update -y && sudo apt-get install -y build-essential
-    - run: ruby -v
-    - run: gem install bundler -v "~> 1.17"
-    - run: bundle install
-    - run: mkdir ./rspec
-    - run: bundle exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
-    - store_test_results:
-        path: ./rspec
-    - store_artifacts:
-        path: ./rspec
+      - build-test-linux:
+          name: Ruby 2.5
+          docker-image: cimg/ruby:2.5
+      - build-test-linux:
+          name: Ruby 2.6
+          docker-image: cimg/ruby:2.6
+      - build-test-linux:
+          name: Ruby 2.7
+          docker-image: cimg/ruby:2.7
+      - build-test-linux:
+          name: Ruby 3.0
+          docker-image: cimg/ruby:3.0
+      - build-test-linux:
+          name: JRuby 9.2
+          docker-image: circleci/jruby:9.2-jdk
+          jruby: true
 
 jobs:
-  test-2.5:
-    <<: *ruby-docker-template
+  build-test-linux:
+    parameters:
+      docker-image:
+        type: string
+      jruby:
+        type: boolean
+        default: false
+
     docker:
-      - image: circleci/ruby:2.5
-  test-2.6:
-    <<: *ruby-docker-template
-    docker:
-      - image: circleci/ruby:2.6
-  test-2.7:
-    <<: *ruby-docker-template
-    docker:
-      - image: circleci/ruby:2.7
-  test-3.0:
-    <<: *ruby-docker-template
-    docker:
-      - image: circleci/ruby:3.0
-  test-jruby-9.2:
-    <<: *ruby-docker-template
-    docker:
-      - image: circleci/jruby:9.2-jdk
+      - image: <<parameters.docker-image>>
+
+    steps:
+      - checkout
+      - when:
+          condition: <<parameters.jruby>>
+          steps:
+            - run: gem install jruby-openssl  # required by bundler, no effect on Ruby MRI
+      - run: sudo apt-get update -y && sudo apt-get install -y build-essential
+      - run: ruby -v
+      - run: gem install bundler -v 2.2.10
+      - run: bundle _2.2.10_ install
+      - run: mkdir ./rspec
+      - run: bundle _2.2.10_ exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
+      - store_test_results:
+          path: ./rspec
+      - store_artifacts:
+          path: ./rspec
