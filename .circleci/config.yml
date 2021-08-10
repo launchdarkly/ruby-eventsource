@@ -19,10 +19,10 @@ ruby-docker-template: &ruby-docker-template
         fi
     - run: sudo apt-get update -y && sudo apt-get install -y build-essential
     - run: ruby -v
-    - run: gem install bundler -v "~> 1.17"
-    - run: bundle install
+    - run: gem install bundler -v 2.2.10
+    - run: bundle _2.2.10_ install
     - run: mkdir ./rspec
-    - run: bundle exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
+    - run: bundle _2.2.10_ exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
     - store_test_results:
         path: ./rspec
     - store_artifacts:
