@@ -190,8 +190,8 @@ module SSE
       end
     end
 
-    def is_alive?
-      !@stopped.value
+    def closed?
+      @stopped.value
     end
 
     private
