@@ -2,6 +2,10 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.1.0] - 2021-08-11
+### Added:
+- New `closed?` method tests whether `close` has been called on the client. (Thanks, [qcn](https://github.com/launchdarkly/ruby-eventsource/pull/13)!)
+
 ## [2.0.1] - 2021-08-10
 ### Changed:
 - The dependency version constraint for the `http` gem is now looser: it allows 5.x versions as well as 4.x. The breaking changes in `http` v5.0.0 do not affect `ld-eventsource`.
