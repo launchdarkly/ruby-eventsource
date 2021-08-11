@@ -190,6 +190,11 @@ module SSE
       end
     end
 
+    #
+    # Tests whether the client has been shut down by a call to {Client#close}.
+    #
+    # @return [Boolean]  true if the client has been shut down
+    #
     def closed?
       @stopped.value
     end
