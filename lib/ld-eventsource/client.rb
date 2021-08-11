@@ -190,6 +190,10 @@ module SSE
       end
     end
 
+    def closed?
+      @stopped.value
+    end
+
     private
     
     def reset_http
