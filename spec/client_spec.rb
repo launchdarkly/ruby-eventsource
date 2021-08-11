@@ -426,4 +426,19 @@ EOT
       end
     end
   end
+
+  it "returns true from closed? when closed" do
+    with_server do |server|
+      server.setup_response("/") do |req,res|
+        send_stream_content(res, "", keep_open: true)
+      end
+      
+      with_client(subject.new(server.base_uri)) do |client|
+        expect(client.closed?).to be(false)
+
+        client.close
+        expect(client.closed?).to be(true)
+      end
+    end
+  end
 end
