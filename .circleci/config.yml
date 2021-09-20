@@ -18,7 +18,7 @@ workflows:
           docker-image: cimg/ruby:3.0
       - build-test-linux:
           name: JRuby 9.2
-          docker-image: circleci/jruby:9.2-jdk
+          docker-image: jruby:9.2-jdk
           jruby: true
 
 jobs:
@@ -39,7 +39,12 @@ jobs:
           condition: <<parameters.jruby>>
           steps:
             - run: gem install jruby-openssl  # required by bundler, no effect on Ruby MRI
-      - run: sudo apt-get update -y && sudo apt-get install -y build-essential
+            - run: apt-get update -y && apt-get install -y build-essential
+      - when:
+          condition:
+             not: <<parameters.jruby>>
+          steps:
+            - run: sudo apt-get update -y && sudo apt-get install -y build-essential
       - run: ruby -v
       - run: gem install bundler -v 2.2.10
       - run: bundle _2.2.10_ install
