@@ -63,7 +63,6 @@ EOT
           "host" => ["127.0.0.1:" + server.port.to_s],
           "authorization" => ["secret"],
           "user-agent" => ["ruby-eventsource"],
-          "content-length" => ["0"],
           "connection" => ["close"]
         })
       end
@@ -90,7 +89,6 @@ EOT
           "authorization" => ["secret"],
           "last-event-id" => [id],
           "user-agent" => ["ruby-eventsource"],
-          "content-length" => ["0"],
           "connection" => ["close"]
         })
       end
