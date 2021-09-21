@@ -1,3 +1,5 @@
+version: 2
+
 repo:
   public: ruby-eventsource
 
@@ -7,16 +9,15 @@ publications:
   - url: https://www.rubydoc.info/gems/ld-eventsource
     description: documentation
 
-releasableBranches:
+branches:
   - name: master
     description: 2.x - based on the http gem
   - name: 1.x
     description: 1.x - based on the socketry gem
 
-circleci:
-  linux:
-    image: cimg/ruby:2.5
-    context: org-global
-
-template:
-  name: ruby
+jobs:
+  - docker:
+      image: ruby:2.5-buster
+      copyGitHistory: true  # building gem requires git metadata due to use of "git ls-files" in the gemspec
+    template:
+      name: ruby
