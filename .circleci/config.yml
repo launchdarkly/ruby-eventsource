@@ -49,7 +49,7 @@ jobs:
       - run: gem install bundler -v 2.2.10
       - run: bundle _2.2.10_ install
       - run: mkdir ./rspec
-      - run: bundle _2.2.10_ exec rspec --format progress --format RspecJunitFormatter -o ./rspec/rspec.xml spec
+      - run: bundle _2.2.10_ exec rspec --format documentation --format RspecJunitFormatter -o ./rspec/rspec.xml spec
       - store_test_results:
           path: ./rspec
       - store_artifacts:

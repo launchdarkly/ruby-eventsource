@@ -20,7 +20,8 @@ module SSE
       #
       # Constructs an instance of EventParser.
       #
-      # @param [Enumerator] lines  an enumerator that will yield one line of text at a time
+      # @param [Enumerator] lines  an enumerator that will yield one line of text at a time;
+      #   the lines should not include line terminators
       #
       def initialize(lines)
         @lines = lines
@@ -31,7 +32,6 @@ module SSE
       def items
         Enumerator.new do |gen|
           @lines.each do |line|
-            line.chomp!
             if line.empty?
               event = maybe_create_event
               reset_buffers

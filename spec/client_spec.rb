@@ -1,4 +1,5 @@
 require "ld-eventsource"
+require "http_stub"
 
 #
 # End-to-end tests of the SSE client against a real server
