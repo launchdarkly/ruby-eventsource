@@ -133,6 +133,7 @@ module SSE
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
         reconnect_reset_interval: reconnect_reset_interval)
+      @first_attempt = true
 
       @on = { event: ->(_) {}, error: ->(_) {} }
       @last_id = last_event_id
@@ -283,7 +284,8 @@ module SSE
     def connect
       loop do
         return if @stopped.value
-        interval = @backoff.next_interval
+        interval = @first_attempt ? 0 : @backoff.next_interval
+        @first_attempt = false
         if interval > 0
           @logger.info { "Will retry connection after #{'%.3f' % interval} seconds" } 
           sleep(interval)
