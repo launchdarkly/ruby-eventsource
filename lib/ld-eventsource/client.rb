@@ -295,7 +295,7 @@ module SSE
             begin
               data = cxn.readpartial
             rescue HTTP::TimeoutError 
-              # We rethrow this as our own type so the caller doesn't have to know the httprb API
+              # For historical reasons, we rethrow this as our own type
               raise Errors::ReadTimeoutError.new(@read_timeout)
             end
             break if data.nil?

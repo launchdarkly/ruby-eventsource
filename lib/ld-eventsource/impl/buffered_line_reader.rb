@@ -63,8 +63,6 @@ module SSE
               end
               position = i
               line_start = i
-              # position = 0  # Next time we're looking for a line break, we'll start at the beginning
-              # line = buffer.slice!(0, i + 1).force_encoding(Encoding::UTF_8).chomp!
               gen.yield line
             end
           end
