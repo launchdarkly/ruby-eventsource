@@ -129,6 +129,8 @@ module SSE
           read: read_timeout,
           connect: connect_timeout
         })
+      @cxn = nil
+      @lock = Mutex.new
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
         reconnect_reset_interval: reconnect_reset_interval)
@@ -203,9 +205,16 @@ module SSE
     
     def reset_http
       @http_client.close if !@http_client.nil?
-      @cxn = nil
+      close_connection
     end
     
+    def close_connection
+      @lock.synchronize do
+        @cxn.connection.close if !@cxn.nil?
+        @cxn = nil
+      end
+    end
+
     def default_logger
       log = ::Logger.new($stdout)
       log.level = ::Logger::WARN
@@ -215,13 +224,16 @@ module SSE
 
     def run_stream
       while !@stopped.value
-        @cxn = nil
+        close_connection
         begin
-          @cxn = connect
+          resp = connect
+          @lock.synchronize do
+            @cxn = resp
+          end
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
           return if @stopped.value
-          read_stream(@cxn) if !@cxn.nil?
+          read_stream(resp) if !resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
           # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
