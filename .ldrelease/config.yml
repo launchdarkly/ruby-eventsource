@@ -18,6 +18,5 @@ branches:
 jobs:
   - docker:
       image: ruby:2.5-buster
-      copyGitHistory: true  # building gem requires git metadata due to use of "git ls-files" in the gemspec
     template:
       name: ruby
