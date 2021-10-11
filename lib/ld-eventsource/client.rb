@@ -1,4 +1,5 @@
 require "ld-eventsource/impl/backoff"
+require "ld-eventsource/impl/buffered_line_reader"
 require "ld-eventsource/impl/event_parser"
 require "ld-eventsource/events"
 require "ld-eventsource/errors"
@@ -128,7 +129,7 @@ module SSE
           read: read_timeout,
           connect: connect_timeout
         })
-      @buffer = ""
+      @cxn = nil
       @lock = Mutex.new
 
       @backoff = Impl::Backoff.new(reconnect_time || DEFAULT_RECONNECT_TIME, MAX_RECONNECT_TIME,
@@ -204,47 +205,14 @@ module SSE
     
     def reset_http
       @http_client.close if !@http_client.nil?
-      @cxn = nil
-      @buffer = ""
+      close_connection
     end
     
-    def read_lines
-      Enumerator.new do |gen|
-        loop do
-          line = read_line
-          break if line.nil?
-          gen.yield line
-        end
+    def close_connection
+      @lock.synchronize do
+        @cxn.connection.close if !@cxn.nil?
+        @cxn = nil
       end
-    end
-    
-    def read_line
-      loop do
-        @lock.synchronize do
-          i = @buffer.index(/[\r\n]/)
-          if !i.nil? && !(i == @buffer.length - 1 && @buffer[i] == "\r")
-            i += 1 if (@buffer[i] == "\r" && @buffer[i + 1] == "\n")
-            return @buffer.slice!(0, i + 1).force_encoding(Encoding::UTF_8)
-          end
-        end
-        return nil if !read_chunk_into_buffer
-      end
-    end
-    
-    def read_chunk_into_buffer
-      # If @done is set, it means the Parser has signaled end of response body
-      @lock.synchronize { return false if @done }
-      begin
-        data = @cxn.readpartial
-      rescue HTTP::TimeoutError 
-        # We rethrow this as our own type so the caller doesn't have to know the httprb API
-        raise Errors::ReadTimeoutError.new(@read_timeout)
-      end
-      return false if data == nil
-      @buffer << data
-      # We are piping the content through the parser so that it can handle things like chunked
-      # encoding for us. The content ends up being appended to @buffer via our callback.
-      true
     end
 
     def default_logger
@@ -256,13 +224,16 @@ module SSE
 
     def run_stream
       while !@stopped.value
-        @cxn = nil
+        close_connection
         begin
-          @cxn = connect
+          resp = connect
+          @lock.synchronize do
+            @cxn = resp
+          end
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
           return if @stopped.value
-          read_stream(@cxn) if !@cxn.nil?
+          read_stream(resp) if !resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
           # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
@@ -328,7 +299,24 @@ module SSE
       # it can automatically reset itself if enough time passes between failures.
       @backoff.mark_success
 
-      event_parser = Impl::EventParser.new(read_lines)
+      chunks = Enumerator.new do |gen|
+        loop do
+          if @stopped.value
+            break
+          else
+            begin
+              data = cxn.readpartial
+            rescue HTTP::TimeoutError 
+              # For historical reasons, we rethrow this as our own type
+              raise Errors::ReadTimeoutError.new(@read_timeout)
+            end
+            break if data.nil?
+            gen.yield data
+          end
+        end
+      end
+      event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks))
+
       event_parser.items.each do |item|
         return if @stopped.value
         case item

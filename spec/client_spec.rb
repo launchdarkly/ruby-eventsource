@@ -1,4 +1,5 @@
 require "ld-eventsource"
+require "http_stub"
 
 #
 # End-to-end tests of the SSE client against a real server
@@ -36,13 +37,15 @@ EOT
     res.content_type = "text/event-stream"
     res.status = 200
     res.chunked = true
-    rd, wr = IO.pipe
-    wr.write(content)
-    res.body = rd
-    if !keep_open
-      wr.close
+    if keep_open
+      rd, wr = IO.pipe
+      res.body = rd
+      wr.write(content)
+      wr
+    else
+      res.body = proc { |out| out.write(content) }
+      nil
     end
-    wr
   end
 
   it "sends expected headers" do
