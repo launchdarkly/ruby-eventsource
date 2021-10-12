@@ -59,6 +59,56 @@ describe SSE::Impl::EventParser do
       ])
   end
 
+  it "parses an event with a leading blank data line" do
+    verify_parsed_events(
+      lines: [
+        "data:",
+        "data: abc",
+        ""
+      ],
+      expected_events: [
+        SSE::StreamEvent.new(:message, "\nabc", nil)
+      ])
+  end
+
+  it "parses an event with multiple leading blank data lines" do
+    verify_parsed_events(
+      lines: [
+        "data:",
+        "data:",
+        "data: abc",
+        ""
+      ],
+      expected_events: [
+        SSE::StreamEvent.new(:message, "\n\nabc", nil)
+      ])
+  end
+
+  it "parses an event with a blank data line in the middle" do
+    verify_parsed_events(
+      lines: [
+        "data: abc",
+        "data:",
+        "data: def",
+        ""
+      ],
+      expected_events: [
+        SSE::StreamEvent.new(:message, "abc\n\ndef", nil)
+      ])
+  end
+
+  it "parses an event with a trailing blank data line" do
+    verify_parsed_events(
+      lines: [
+        "data: abc",
+        "data:",
+        ""
+      ],
+      expected_events: [
+        SSE::StreamEvent.new(:message, "abc\n", nil)
+      ])
+  end
+
   it "ignores comments" do
     lines = [
       ":",
