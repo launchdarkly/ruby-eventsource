@@ -3,6 +3,12 @@ require "ld-eventsource/impl/event_parser"
 describe SSE::Impl::EventParser do
   subject { SSE::Impl::EventParser }
 
+  def verify_parsed_events(lines:, expected_events:)
+    ep = subject.new(lines)
+    output = ep.items.to_a
+    expect(output).to eq(expected_events)
+  end
+
   it "parses an event with all fields" do
     lines = [
       "event: abc",
@@ -40,6 +46,17 @@ describe SSE::Impl::EventParser do
     expected_event = SSE::StreamEvent.new(:message, "def\nghi", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
+  end
+
+  it "parses an event with empty data" do
+    verify_parsed_events(
+      lines: [
+        "data:",
+        ""
+      ],
+      expected_events: [
+        SSE::StreamEvent.new(:message, "", nil)
+      ])
   end
 
   it "ignores comments" do
