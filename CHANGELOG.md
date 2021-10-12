@@ -2,12 +2,6 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
-## [2.1.1] - 2021-10-11
-### Fixed:
-- Performance should now be greatly improved when parsing events that have very long data. Previously, the logic for parsing the stream to find line breaks could result in unnecessary extra scans of the same characters and unnecessary extra string slicing. ([#20](https://github.com/launchdarkly/ruby-eventsource/issues/20))
-- The backoff delay algorithm was being inappropriately applied _before_ the first connection attempt. In the default configuration, that meant an extra delay of between 0.5 seconds and 1 second.
-- Leading linefeeds were being dropped from multi-line event data. This does not affect use of `SSE::Client` within the LaunchDarkly SDK, because LaunchDarkly streams consist of JSON data so unescaped linefeeds are not significant, but it could affect uses of this library outside of the SDK.
-
 ## [2.1.0] - 2021-08-11
 ### Added:
 - New `closed?` method tests whether `close` has been called on the client. (Thanks, [qcn](https://github.com/launchdarkly/ruby-eventsource/pull/13)!)
