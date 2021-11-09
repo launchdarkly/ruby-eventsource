@@ -53,6 +53,7 @@ module SSE
         @id = nil
         @type = nil
         @data = ""
+        @have_data = false
       end
 
       def process_field(name, value)
@@ -60,8 +61,9 @@ module SSE
           when "event"
             @type = value.to_sym
           when "data"
-            @data << "\n" if !@data.empty?
+            @data << "\n" if @have_data
             @data << value
+            @have_data = true
           when "id"
             @id = value
           when "retry"
@@ -73,7 +75,7 @@ module SSE
       end
 
       def maybe_create_event
-        return nil if @data.empty?
+        return nil if !@have_data
         StreamEvent.new(@type || :message, @data, @id)
       end
     end
