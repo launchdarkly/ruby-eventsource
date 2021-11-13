@@ -50,7 +50,14 @@ jobs:
       - run: bundle _2.2.10_ install
       - run: mkdir ./rspec
       - run: bundle _2.2.10_ exec rspec --format documentation --format RspecJunitFormatter -o ./rspec/rspec.xml spec
+
       - store_test_results:
           path: ./rspec
       - store_artifacts:
           path: ./rspec
+
+      - run: make build-contract-tests
+      - run:
+          command: make start-contract-test-service
+          background: true
+      - run: make run-contract-tests
