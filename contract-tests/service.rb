@@ -4,6 +4,8 @@ require 'logger'
 require 'net/http'
 require 'sinatra'
 
+require './stream_entity.rb'
+
 $log = Logger.new(STDOUT)
 $log.formatter = proc {|severity, datetime, progname, msg|
   "#{datetime.strftime('%Y-%m-%d %H:%M:%S.%3N')} #{severity} #{progname} #{msg}\n"
@@ -14,51 +16,6 @@ set :logging, false
 
 streams = {}
 streamCounter = 0
-
-class StreamEntity
-  def initialize(sse, tag, callbackUrl)
-    @sse = sse
-    @tag = tag
-    @callbackUrl = callbackUrl
-
-    sse.on_event { |event| self.on_event(event) }
-    sse.on_error { |error| self.on_error(error) }
-  end
-
-  def on_event(event)
-    $log.info("#{@tag} Received event from stream (#{event.type})")
-    message = {
-      kind: 'event',
-      event: {
-        type: event.type,
-        data: event.data,
-        id: event.id
-      }
-    }
-    self.send_message(message)
-  end
-
-  def on_error(error)
-    $log.info("#{@tag} Received error from stream: #{error}")
-    message = {
-      kind: 'error',
-      error: error
-    }
-    self.send_message(message)
-  end
-
-  def send_message(message)
-    resp = Net::HTTP.post(URI(@callbackUrl), JSON.generate(message))
-    if resp.code.to_i >= 300
-      $log.error("#{@tag} Callback post returned status #{resp.code}")
-    end
-  end
-
-  def close
-    @sse.close
-    $log.info("#{@tag} Test ended")
-  end
-end
 
 get '/' do
   {
