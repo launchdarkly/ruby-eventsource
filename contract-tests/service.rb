@@ -64,7 +64,7 @@ post '/' do
 
   streams[streamId] = entity
 
-  return [201, {'Location': streamResourceUrl}, nil]
+  return [201, {"Location" => streamResourceUrl}, nil]
 end
 
 delete '/streams/:id' do |streamId|

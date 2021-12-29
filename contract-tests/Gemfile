@@ -3,5 +3,8 @@ source 'https://rubygems.org'
 gem 'ld-eventsource', path: '..'
 
 gem 'sinatra', '~> 2.1'
+# Sinatra can work with several server frameworks. In JRuby, we have to use glassfish (which
+# is only available in JRuby). Otherwise we use thin (which is not available in JRuby).
+gem 'glassfish', :platforms => :jruby
+gem 'thin', :platforms => :ruby
 gem 'json'
-gem 'thin'
