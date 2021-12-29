@@ -23,8 +23,9 @@ module SSE
       # @param [Enumerator] lines  an enumerator that will yield one line of text at a time;
       #   the lines should not include line terminators
       #
-      def initialize(lines)
+      def initialize(lines, last_event_id = nil)
         @lines = lines
+        @last_event_id = last_event_id
         reset_buffers
       end
 
@@ -65,7 +66,10 @@ module SSE
             @data << value
             @have_data = true
           when "id"
-            @id = value
+            if !value.include?("\x00")
+              @id = value
+              @last_event_id = value
+            end
           when "retry"
             if /^(?<num>\d+)$/ =~ value
               return SetRetryInterval.new(num.to_i)
@@ -76,7 +80,7 @@ module SSE
 
       def maybe_create_event
         return nil if !@have_data
-        StreamEvent.new(@type || :message, @data, @id)
+        StreamEvent.new(@type || :message, @data, @id, @last_event_id)
       end
     end
   end
