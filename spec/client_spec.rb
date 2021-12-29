@@ -7,19 +7,17 @@ require "http_stub"
 describe SSE::Client do
   subject { SSE::Client }
 
-  let(:simple_event_1) { SSE::StreamEvent.new(:go, "foo", "a")}
-  let(:simple_event_2) { SSE::StreamEvent.new(:stop, "bar", "b")}
+  let(:simple_event_1) { SSE::StreamEvent.new(:go, "foo")}
+  let(:simple_event_2) { SSE::StreamEvent.new(:stop, "bar")}
   let(:simple_event_1_text) { <<-EOT
 event: go
 data: foo
-id: a
 
 EOT
   }
   let(:simple_event_2_text) { <<-EOT
 event: stop
 data: bar
-id: b
 
 EOT
   }
@@ -254,8 +252,11 @@ EOT
       server.setup_response("/") do |req,res|
         requests << req
         attempt += 1
-        send_stream_content(res, attempt == 1 ? simple_event_1_text : simple_event_2_text,
-          keep_open: attempt == 2)
+        if attempt == 1
+          send_stream_content(res, "data: foo\nid: a\n\n", keep_open: false)
+        else
+          send_stream_content(res, "data: bar\nid: b\n\n", keep_open: true)
+        end
       end
 
       event_sink = Queue.new
@@ -266,7 +267,7 @@ EOT
       with_client(client) do |client|
         req1 = requests.pop
         req2 = requests.pop
-        expect(req2.header["last-event-id"]).to eq([ simple_event_1.id ])
+        expect(req2.header["last-event-id"]).to eq([ "a" ])
       end
     end
   end

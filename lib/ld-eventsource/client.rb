@@ -315,7 +315,7 @@ module SSE
           end
         end
       end
-      event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks))
+      event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks), @last_id)
 
       event_parser.items.each do |item|
         return if @stopped.value
@@ -331,7 +331,7 @@ module SSE
 
     def dispatch_event(event)
       @logger.debug { "Received event: #{event}" }
-      @last_id = event.id
+      @last_id = event.id if !event.id.nil?
 
       # Pass the event to the caller
       @on[:event].call(event)
@@ -354,7 +354,7 @@ module SSE
         'Cache-Control' => 'no-cache',
         'User-Agent' => 'ruby-eventsource'
       }
-      h['Last-Event-Id'] = @last_id if !@last_id.nil?
+      h['Last-Event-Id'] = @last_id if !@last_id.nil? && @last_id != ""
       h.merge(@headers)
     end
   end
