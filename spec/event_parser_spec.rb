@@ -9,20 +9,6 @@ describe SSE::Impl::EventParser do
     expect(output).to eq(expected_events)
   end
 
-  it "parses an event with all fields" do
-    lines = [
-      "event: abc",
-      "data: def",
-      "id: 1",
-      ""
-    ]
-    ep = subject.new(lines)
-    
-    expected_event = SSE::StreamEvent.new(:abc, "def", "1")
-    output = ep.items.to_a
-    expect(output).to eq([ expected_event ])
-  end
-
   it "parses an event with only data" do
     lines = [
       "data: def",
@@ -35,6 +21,62 @@ describe SSE::Impl::EventParser do
     expect(output).to eq([ expected_event ])
   end
 
+  it "parses an event with all fields" do
+    lines = [
+      "event: abc",
+      "data: def",
+      "id: 1",
+      ""
+    ]
+    ep = subject.new(lines)
+    
+    expected_event = SSE::StreamEvent.new(:abc, "def", "1", "1")
+    output = ep.items.to_a
+    expect(output).to eq([ expected_event ])
+  end
+
+  it "retains last_event_id if latest event had no id" do
+    lines = [
+      "event: abc",
+      "data: def",
+      ""
+    ]
+    ep = subject.new(lines, "1")
+    
+    expected_event = SSE::StreamEvent.new(:abc, "def", nil, "1")
+    output = ep.items.to_a
+    expect(output).to eq([ expected_event ])
+  end
+
+  it "can override previous last_event_id with a blank id" do
+    lines = [
+      "event: abc",
+      "data: def",
+      "id:",
+      ""
+    ]
+    ep = subject.new(lines, "1")
+    
+    expected_event = SSE::StreamEvent.new(:abc, "def", "", "")
+    output = ep.items.to_a
+    expect(output).to eq([ expected_event ])
+  end
+
+  it "ignores id field if it contains a null character" do
+    # per SSE spec (9.2.6)
+    lines = [
+      "event: abc",
+      "data: def",
+      "id: 12\x0034",
+      ""
+    ]
+    ep = subject.new(lines, "1")
+    
+    expected_event = SSE::StreamEvent.new(:abc, "def", nil, "1")
+    output = ep.items.to_a
+    expect(output).to eq([ expected_event ])
+  end
+  
   it "parses an event with multi-line data" do
     lines = [
       "data: def",
@@ -146,8 +188,8 @@ describe SSE::Impl::EventParser do
     ]
     ep = subject.new(lines)
     
-    expected_event_1 = SSE::StreamEvent.new(:abc, "def", "1")
-    expected_event_2 = SSE::StreamEvent.new(:message, "ghi", nil)
+    expected_event_1 = SSE::StreamEvent.new(:abc, "def", "1", "1")
+    expected_event_2 = SSE::StreamEvent.new(:message, "ghi", nil, "1")
     output = ep.items.to_a
     expect(output).to eq([ expected_event_1, expected_event_2 ])
   end
