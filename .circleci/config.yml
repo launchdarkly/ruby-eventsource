@@ -20,6 +20,7 @@ workflows:
           name: JRuby 9.2
           docker-image: jruby:9.2-jdk
           jruby: true
+          skip-end-to-end-http-tests: 1  # webrick doesn't work reliably in JRuby 9.2
       - build-test-linux:
           name: JRuby 9.3
           docker-image: jruby:9.3-jdk
@@ -33,9 +34,15 @@ jobs:
       jruby:
         type: boolean
         default: false
+      skip-end-to-end-http-tests:
+        type: string
+        default: ""
 
     docker:
       - image: <<parameters.docker-image>>
+
+    env:
+      LD_SKIP_END_TO_END_HTTP_TESTS: <<parameters.skip-end-to-end-http-tests>>
 
     steps:
       - checkout

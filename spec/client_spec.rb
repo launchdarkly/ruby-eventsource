@@ -5,6 +5,10 @@ require "http_stub"
 # End-to-end tests of the SSE client against a real server
 #
 describe SSE::Client do
+  before(:each) do
+    skip("end-to-end HTTP tests are disabled because they're unreliable on this platform") if !stub_http_server_available?
+  end
+
   subject { SSE::Client }
 
   let(:simple_event_1) { SSE::StreamEvent.new(:go, "foo")}
