@@ -40,9 +40,8 @@ jobs:
 
     docker:
       - image: <<parameters.docker-image>>
-
-    env:
-      LD_SKIP_END_TO_END_HTTP_TESTS: <<parameters.skip-end-to-end-http-tests>>
+        environment:
+          LD_SKIP_END_TO_END_HTTP_TESTS: <<parameters.skip-end-to-end-http-tests>>
 
     steps:
       - checkout
