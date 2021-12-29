@@ -12,9 +12,9 @@ module SSE
   # @!attribute id
   #   @return [String] the string that appeared after `id:` in the stream if any, or nil
   # @!attribute last_event_id
-  #   @return [String] the most recent non-empty `id:` value that has been seen in an
-  #     event from this stream; this differs from the `id` property in that it retains
-  #     the same value in subsequent events if they do not provide their own `id:`
+  #   @return [String] the most `id:` value that has been seen in an event from this
+  #     stream; this differs from the `id` property in that it retains the same value in
+  #     subsequent events if they do not provide their own `id:`
   #
   StreamEvent = Struct.new(:type, :data, :id, :last_event_id)
 end
