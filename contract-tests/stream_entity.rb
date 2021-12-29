@@ -26,7 +26,7 @@ class StreamEntity
       event: {
         type: event.type,
         data: event.data,
-        id: event.id
+        id: event.last_event_id
       }
     }
     self.send_message(message)
