@@ -74,4 +74,19 @@ describe SSE::Impl::BufferedLineReader do
       "fourth line", "", "last"]
     expect(subject.lines_from(chunks).to_a).to eq(expected)
   end
+
+  it "decodes from UTF-8" do
+    text = "abc€豆腐xyz"
+    chunks = [(text + "\n").encode("UTF-8").b]
+    expected = [text]
+    expect(subject.lines_from(chunks).to_a).to eq(expected)
+  end
+
+  it "decodes from UTF-8 when multi-byte characters are split across chunks" do
+    text = "abc€豆腐xyz"
+    chunks = (text + "\n").encode("UTF-8").b.
+      chars.each_slice(1).map { |a| a.join }
+      expected = [text]
+    expect(subject.lines_from(chunks).to_a).to eq(expected)
+  end
 end

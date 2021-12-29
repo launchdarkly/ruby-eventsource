@@ -9,18 +9,20 @@ module SSE
       # input data runs out, the output enumerator ends and does not include any partially
       # completed line.
       #
-      # @param [Enumerator] chunks  an enumerator that will yield strings from a stream
-      # @return [Enumerator]  an enumerator that will yield one line at a time
+      # @param [Enumerator] chunks  an enumerator that will yield strings from a stream;
+      #  these are treated as raw UTF-8 bytes, regardless of the string's declared encoding
+      #  (so it is OK if a multi-byte character is split across chunks)
+      # @return [Enumerator]  an enumerator that will yield one line at a time in UTF-8
       #
       def self.lines_from(chunks)
-        buffer = ""
+        buffer = "".b
         position = 0
         line_start = 0
         last_char_was_cr = false
 
         Enumerator.new do |gen|
           chunks.each do |chunk|
-            buffer << chunk
+            buffer << chunk.b
 
             loop do
               # Search for a line break in any part of the buffer that we haven't yet seen.
@@ -47,7 +49,12 @@ module SSE
                 next
               end
 
-              line = buffer[line_start, i - line_start]
+              line = buffer[line_start, i - line_start].force_encoding("UTF-8")
+              # Calling force_encoding just declares that we believe the encoding of this string to be
+              # UTF-8 (which is the only encoding allowed in the SSE protocol); it doesn't cause any
+              # re-decoding of the string. The previous line-parsing steps were done on raw 8-bit
+              # strings so that it won't try to do any UTF-8 decoding on intermediate slices.
+
               last_char_was_cr = false
               i += 1
               if ch == "\r"

@@ -306,6 +306,9 @@ module SSE
           else
             begin
               data = cxn.readpartial
+              # readpartial gives us a string, which may not be a valid UTF-8 string because a
+              # multi-byte character might not yet have been fully read, but BufferedLineReader
+              # will handle that.
             rescue HTTP::TimeoutError 
               # For historical reasons, we rethrow this as our own type
               raise Errors::ReadTimeoutError.new(@read_timeout)
