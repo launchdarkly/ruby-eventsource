@@ -9,8 +9,6 @@ describe SSE::Client do
 
   let(:simple_event_1) { SSE::StreamEvent.new(:go, "foo")}
   let(:simple_event_2) { SSE::StreamEvent.new(:stop, "bar")}
-  let(:event_with_id_1) { SSE::StreamEvent.new(:withid, "foo", "a")}
-  let(:event_with_id_2) { SSE::StreamEvent.new(:withid, "foo", "b")}
   let(:simple_event_1_text) { <<-EOT
 event: go
 data: foo
@@ -18,18 +16,6 @@ data: foo
 EOT
   }
   let(:simple_event_2_text) { <<-EOT
-event: stop
-data: bar
-
-EOT
-  }
-  let(:event_with_id_1_text) { <<-EOT
-event: withid
-data: foo
-
-EOT
-  }
-  let(:event_with_id_2_text) { <<-EOT
 event: stop
 data: bar
 
