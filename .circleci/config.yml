@@ -20,6 +20,10 @@ workflows:
           name: JRuby 9.2
           docker-image: jruby:9.2-jdk
           jruby: true
+      - build-test-linux:
+          name: JRuby 9.3
+          docker-image: jruby:9.3-jdk
+          jruby: true
 
 jobs:
   build-test-linux:
