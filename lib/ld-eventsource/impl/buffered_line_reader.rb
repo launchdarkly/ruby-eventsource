@@ -9,9 +9,10 @@ module SSE
       # input data runs out, the output enumerator ends and does not include any partially
       # completed line.
       #
-      # @param [Enumerator] chunks  an enumerator that will yield strings from a stream;
+      # @param [Enumerator] chunks  an enumerator that will yield strings from a stream -
       #  these are treated as raw UTF-8 bytes, regardless of the string's declared encoding
-      #  (so it is OK if a multi-byte character is split across chunks)
+      #  (so it is OK if a multi-byte character is split across chunks); if the declared
+      #  encoding of the chunk is not ASCII-8BIT, it will be changed to ASCII-8BIT in place
       # @return [Enumerator]  an enumerator that will yield one line at a time in UTF-8
       #
       def self.lines_from(chunks)
@@ -22,7 +23,8 @@ module SSE
 
         Enumerator.new do |gen|
           chunks.each do |chunk|
-            buffer << chunk.b
+            chunk.force_encoding("ASCII-8BIT")
+            buffer << chunk
 
             loop do
               # Search for a line break in any part of the buffer that we haven't yet seen.
