@@ -69,7 +69,7 @@ end
 
 delete '/streams/:id' do |streamId|
   entity = streams[streamId]
-  return 404 if stream.nil?
+  return 404 if entity.nil?
   streams.delete(streamId)
   entity.close
 
