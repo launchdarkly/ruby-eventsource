@@ -41,7 +41,11 @@ module SSE
         @last_good_time = nil
         target = ([@base_interval * (2 ** @attempts), @max_interval].min).to_f
         @attempts += 1
-        (target / 2) + @jitter_rand.rand(target / 2)
+        if target == 0
+          0  # in some Ruby versions it's illegal to call rand(0)
+        else
+          (target / 2) + @jitter_rand.rand(target / 2)
+        end
       end
 
       #
