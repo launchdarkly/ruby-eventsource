@@ -47,6 +47,17 @@ module SSE
         expect(interval).to be <= (initial * 2)
         expect(interval).to be >= initial
       end
+
+      it "always returns zero if the initial delay is zero" do
+        initial = 0
+        max = 60
+        b = Backoff.new(initial, max)
+        
+        for i in 1..6 do
+          interval = b.next_interval
+          expect(interval).to eq(0)
+        end
+      end
     end
   end
 end
