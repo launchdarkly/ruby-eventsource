@@ -2,6 +2,11 @@ require "webrick"
 require "webrick/httpproxy"
 require "webrick/https"
 
+def stub_http_server_available?
+  flag = ENV["LD_SKIP_END_TO_END_HTTP_TESTS"]
+  flag.nil? || flag == ""
+end
+
 class StubHTTPServer
   attr_reader :port
 
