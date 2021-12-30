@@ -84,9 +84,14 @@ describe SSE::Impl::BufferedLineReader do
 
   it "decodes from UTF-8 when multi-byte characters are split across chunks" do
     text = "abc€豆腐xyz"
-    chunks = (text + "\n").encode("UTF-8").b.
-      chars.each_slice(1).map { |a| a.join }
-      expected = [text]
+    raw = (text + "\n").encode("UTF-8").b
+    chunks = raw.bytes.to_a.map{ |byte| byte.chr.force_encoding("UTF-8") }
+    # Calling force_encoding("UTF-8") here simulates the behavior of the http gem's
+    # readpartial method. It actually returns undecoded bytes that might include an
+    # incomplete multi-byte character, but the string's decoding could still be
+    # declared as UTF-8. So we are making sure that BufferedLineReader correctly
+    # handles such a case.
+    expected = [text]
     expect(subject.lines_from(chunks).to_a).to eq(expected)
   end
 end
