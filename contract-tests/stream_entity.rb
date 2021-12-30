@@ -5,9 +5,6 @@ require 'net/http'
 set :port, 8000
 set :logging, false
 
-streams = {}
-streamCounter = 0
-
 class StreamEntity
   def initialize(sse, tag, callbackUrl)
     @sse = sse
