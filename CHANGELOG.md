@@ -2,6 +2,10 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.2.1] - 2022-06-15
+### Fixed:
+- Improved efficiency of SSE parsing to reduce transient memory/CPU usage spikes when streams contain long lines. (Thanks, [sq-square](https://github.com/launchdarkly/ruby-eventsource/pull/32)!)
+
 ## [2.2.0] - 2021-12-31
 ### Added:
 - The `StreamEvent` type now has a new property, `last_event_id`. Unlike the `id` property which reports only the value of the `id:` field (if any) in that particular event, `last_event_id` reports the `id:` value that was most recently specified in _any_ event. The specification states that this state should be included in every event; the ability to distinguish `last_event_id` from `id` is an extended feature of this gem.
