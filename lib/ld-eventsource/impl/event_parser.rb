@@ -37,11 +37,12 @@ module SSE
               event = maybe_create_event
               reset_buffers
               gen.yield event if !event.nil?
-            elsif (colon = line.index(':'))
-              name = line.slice(0...colon)
+            elsif (pos = line.index(':'))
+              name = line.slice(0...pos)
 
-              # delete the colon followed by an optional space
-              line = line.slice(colon...).delete_prefix(':').delete_prefix(" ")
+              pos += 1  # skip colon
+              pos += 1 if pos < line.length && line[pos] == ' '  # skip optional single space, per SSE spec
+              line = line.slice(pos..-1)
 
               item = process_field(name, line)
               gen.yield item if !item.nil?
