@@ -42,7 +42,7 @@ module SSE
 
               pos += 1  # skip colon
               pos += 1 if pos < line.length && line[pos] == ' '  # skip optional single space, per SSE spec
-              line = line.slice(pos...)
+              line = line.slice(pos..-1)
 
               item = process_field(name, line)
               gen.yield item if !item.nil?
