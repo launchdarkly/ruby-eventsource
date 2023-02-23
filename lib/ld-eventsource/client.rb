@@ -85,7 +85,7 @@ module SSE
     #   if you want to use something other than the default `TCPSocket`; it must implement
     #   `open(uri, timeout)` to return a connected `Socket`
     # @yieldparam [Client] client  the new client instance, before opening the connection
-    # 
+    #
     def initialize(uri,
           headers: {},
           connect_timeout: DEFAULT_CONNECT_TIMEOUT,
@@ -107,7 +107,7 @@ module SSE
       if socket_factory
         http_client_options["socket_class"] = socket_factory
       end
-      
+
       if proxy
         @proxy = proxy
       else
@@ -202,12 +202,12 @@ module SSE
     end
 
     private
-    
+
     def reset_http
       @http_client.close if !@http_client.nil?
       close_connection
     end
-    
+
     def close_connection
       @lock.synchronize do
         @cxn.connection.close if !@cxn.nil?
@@ -258,7 +258,7 @@ module SSE
         interval = @first_attempt ? 0 : @backoff.next_interval
         @first_attempt = false
         if interval > 0
-          @logger.info { "Will retry connection after #{'%.3f' % interval} seconds" } 
+          @logger.info { "Will retry connection after #{'%.3f' % interval} seconds" }
           sleep(interval)
         end
         cxn = nil
@@ -268,14 +268,14 @@ module SSE
             headers: build_headers
           })
           if cxn.status.code == 200
-            content_type = cxn.headers["content-type"]
+            content_type = cxn.headers["Content-Type"]
             if content_type && content_type.start_with?("text/event-stream")
               return cxn  # we're good to proceed
             else
               reset_http
-              err = Errors::HTTPContentTypeError.new(cxn.headers["content-type"])
+              err = Errors::HTTPContentTypeError.new(content_type)
               @on[:error].call(err)
-              @logger.warn { "Event source returned unexpected content type '#{cxn.headers["content-type"]}'" }
+              @logger.warn { "Event source returned unexpected content type '#{content_type}'" }
             end
           else
             body = cxn.to_s  # grab the whole response body in case it has error details
@@ -309,7 +309,7 @@ module SSE
               # readpartial gives us a string, which may not be a valid UTF-8 string because a
               # multi-byte character might not yet have been fully read, but BufferedLineReader
               # will handle that.
-            rescue HTTP::TimeoutError 
+            rescue HTTP::TimeoutError
               # For historical reasons, we rethrow this as our own type
               raise Errors::ReadTimeoutError.new(@read_timeout)
             end
@@ -344,7 +344,7 @@ module SSE
       @logger.warn { "#{message}: #{e.inspect}"}
       @logger.debug { "Exception trace: #{e.backtrace}" }
       begin
-        @on[:error].call(e)      
+        @on[:error].call(e)
       rescue StandardError => ee
         @logger.warn { "Error handler threw an exception: #{ee.inspect}"}
         @logger.debug { "Exception trace: #{ee.backtrace}" }
