@@ -103,7 +103,11 @@ module SSE
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
       @logger = logger || default_logger
-      http_client_options = {}
+      http_client_options = {
+        ssl: {
+          verify_mode: OpenSSL::SSL::VERIFY_NONE # Ignore SSL verification
+        }
+      }
       if socket_factory
         http_client_options["socket_class"] = socket_factory
       end
