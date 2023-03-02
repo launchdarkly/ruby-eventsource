@@ -3,7 +3,6 @@
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "ld-eventsource/version"
-require "rake"
 
 # rubocop:disable Metrics/BlockLength
 Gem::Specification.new do |spec|
