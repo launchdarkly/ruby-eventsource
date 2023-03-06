@@ -124,7 +124,9 @@ module SSE
       if @proxy
         http_client_options["proxy"] = {
           :proxy_address => @proxy.host,
-          :proxy_port => @proxy.port
+          :proxy_port => @proxy.port,
+          :proxy_user => @proxy.user,
+          :proxy_pass => @proxy.password,
         }
       end
 
