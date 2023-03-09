@@ -268,7 +268,7 @@ module SSE
             headers: build_headers
           })
           if cxn.status.code == 200
-            content_type = cxn.headers["Content-Type"]
+            content_type = cxn.content_type.mime_type
             if content_type && content_type.start_with?("text/event-stream")
               return cxn  # we're good to proceed
             else
