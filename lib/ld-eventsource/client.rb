@@ -49,6 +49,8 @@ module SSE
     # The default value for `reconnect_reset_interval` in {#initialize}.
     DEFAULT_RECONNECT_RESET_INTERVAL = 60
 
+    DEFAULT_HTTP_METHOD = "GET"
+
     #
     # Creates a new SSE client.
     #
@@ -92,6 +94,8 @@ module SSE
           read_timeout: DEFAULT_READ_TIMEOUT,
           reconnect_time: DEFAULT_RECONNECT_TIME,
           reconnect_reset_interval: DEFAULT_RECONNECT_RESET_INTERVAL,
+          http_method: DEFAULT_HTTP_METHOD,
+          http_payload: {},
           last_event_id: nil,
           proxy: nil,
           logger: nil,
@@ -102,6 +106,8 @@ module SSE
       @headers = headers.clone
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
+      @http_method = http_method
+      @http_payload = http_payload
       @logger = logger || default_logger
       http_client_options = {
         ssl: {
@@ -270,9 +276,9 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          cxn = @http_client.request("GET", @uri, {
-            headers: build_headers
-          })
+          opts = { headers: build_headers }
+          opts[:json] = @http_payload unless @http_payload == {}
+          cxn = @http_client.request(@http_method, @uri, opts)
           if cxn.status.code == 200
             content_type = cxn.headers["content-type"]
             if content_type && content_type.start_with?("text/event-stream")
