@@ -2,6 +2,10 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.2.2] - 2023-03-13
+### Fixed:
+- Content-Type checking was failing in some environments due to casing issues. Updated check to use a more robust header retrieval method. (Thanks, [matt-dutchie](https://github.com/launchdarkly/ruby-eventsource/pull/36)!)
+
 ## [2.2.1] - 2022-06-15
 ### Fixed:
 - Improved efficiency of SSE parsing to reduce transient memory/CPU usage spikes when streams contain long lines. (Thanks, [sq-square](https://github.com/launchdarkly/ruby-eventsource/pull/32)!)
