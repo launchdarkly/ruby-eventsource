@@ -17,6 +17,6 @@ branches:
 
 jobs:
   - docker:
-      image: ruby:2.5-buster
+      image: ruby:2.6-buster
     template:
       name: ruby
