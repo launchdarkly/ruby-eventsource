@@ -1,4 +1,5 @@
 require "ld-eventsource/impl/backoff"
+require "ld-eventsource/impl/basic_event_parser"
 require "ld-eventsource/impl/buffered_line_reader"
 require "ld-eventsource/impl/event_parser"
 require "ld-eventsource/events"
@@ -99,7 +100,8 @@ module SSE
           last_event_id: nil,
           proxy: nil,
           logger: nil,
-          socket_factory: nil)
+          socket_factory: nil,
+          parse: true)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
 
@@ -109,6 +111,7 @@ module SSE
       @http_method = http_method
       @http_payload = http_payload
       @logger = logger || default_logger
+      @parse = parse
       http_client_options = {
         ssl: {
           verify_mode: OpenSSL::SSL::VERIFY_NONE # Ignore SSL verification
@@ -330,7 +333,11 @@ module SSE
           end
         end
       end
-      event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks), @last_id)
+      if @parse
+        event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks), @last_id)
+      else
+        event_parser = Impl::BasicEventParser.new(chunks)
+      end
 
       event_parser.items.each do |item|
         return if @stopped.value
