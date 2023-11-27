@@ -1,7 +1,8 @@
 LaunchDarkly SSE Client for Ruby
 ================================
 
-[![Gem Version](https://badge.fury.io/rb/ld-eventsource.svg)](http://badge.fury.io/rb/ld-eventsource) [![Circle CI](https://circleci.com/gh/launchdarkly/ruby-eventsource/tree/main.svg?style=svg)](https://circleci.com/gh/launchdarkly/ruby-eventsource/tree/main)
+[![Gem Version](https://badge.fury.io/rb/ld-eventsource.svg)](http://badge.fury.io/rb/ld-eventsource) 
+[![Run CI](https://github.com/launchdarkly/ruby-eventsource/actions/workflows/ci.yml/badge.svg)](https://github.com/launchdarkly/ruby-eventsource/actions/workflows/ci.yml)
 
 A client for the [Server-Sent Events](https://www.w3.org/TR/eventsource/) protocol. This implementation runs on a worker thread, and uses the [`http`](https://rubygems.org/gems/http) gem to manage a persistent connection. Its primary purpose is to support the [LaunchDarkly SDK for Ruby](https://github.com/launchdarkly/ruby-client), but it can be used independently.
 
