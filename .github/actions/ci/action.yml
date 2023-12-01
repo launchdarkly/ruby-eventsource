@@ -1,0 +1,27 @@
+name: CI Workflow
+description: 'Shared CI workflow.'
+inputs:
+  ruby-version:
+    description: 'The version of ruby to setup and run'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ inputs.ruby-version }}
+        bundler: 2.2.10
+
+    - name: Install dependencies
+      shell: bash
+      run: bundle _2.2.10_ install
+
+    - name: Skip end to end tests for jruby
+      if: ${{ startsWith(inputs.ruby-version, 'jruby') }}
+      shell: bash
+      run: echo "LD_SKIP_END_TO_END_HTTP_TEST='y'" >> $GITHUB_ENV
+
+    - name: Run tests
+      shell: bash
+      run: bundle _2.2.10_ exec rspec spec
