@@ -25,3 +25,7 @@ runs:
     - name: Run tests
       shell: bash
       run: bundle _2.2.10_ exec rspec spec
+
+    - name: Run contract tests
+      shell: bash
+      run: make contract-tests

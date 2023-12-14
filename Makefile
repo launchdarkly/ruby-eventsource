@@ -1,4 +1,3 @@
-
 TEMP_TEST_OUTPUT=/tmp/sse-contract-test-service.log
 
 build-contract-tests:
