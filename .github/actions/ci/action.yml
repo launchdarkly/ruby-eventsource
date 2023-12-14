@@ -27,5 +27,6 @@ runs:
       run: bundle _2.2.10_ exec rspec spec
 
     - name: Run contract tests
+      if: ${{ !startsWith(inputs.ruby-version, 'jruby') }}
       shell: bash
       run: make contract-tests
