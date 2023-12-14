@@ -37,12 +37,15 @@ module SSE
               event = maybe_create_event
               reset_buffers
               gen.yield event if !event.nil?
-            else
-              case line
-                when /^(\w+): ?(.*)$/
-                  item = process_field($1, $2)
-                  gen.yield item if !item.nil?
-              end
+            elsif (pos = line.index(':'))
+              name = line.slice(0...pos)
+
+              pos += 1  # skip colon
+              pos += 1 if pos < line.length && line[pos] == ' '  # skip optional single space, per SSE spec
+              line = line.slice(pos..-1)
+
+              item = process_field(name, line)
+              gen.yield item if !item.nil?
             end
           end
         end
@@ -62,8 +65,11 @@ module SSE
           when "event"
             @type = value.to_sym
           when "data"
-            @data << "\n" if @have_data
-            @data << value
+            if @have_data
+              @data << "\n" << value
+            else
+              @data = value
+            end
             @have_data = true
           when "id"
             if !value.include?("\x00")
