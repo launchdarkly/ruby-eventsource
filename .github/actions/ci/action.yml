@@ -20,7 +20,7 @@ runs:
     - name: Skip end to end tests for jruby
       if: ${{ startsWith(inputs.ruby-version, 'jruby') }}
       shell: bash
-      run: echo "LD_SKIP_END_TO_END_HTTP_TEST='y'" >> $GITHUB_ENV
+      run: echo "LD_SKIP_END_TO_END_HTTP_TESTS='y'" >> $GITHUB_ENV
 
     - name: Run tests
       shell: bash
