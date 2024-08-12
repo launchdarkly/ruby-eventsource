@@ -13,12 +13,8 @@ jobs:
       contents: write # Contents and pull-requests are for release-please to make releases.
       pull-requests: write
     steps:
-      - uses: google-github-actions/release-please-action@v3
+      - uses: googleapis/release-please-action@v4
         id: release
-        with:
-          command: manifest
-          token: ${{secrets.GITHUB_TOKEN}}
-          default-branch: main
 
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.releases_created }}
