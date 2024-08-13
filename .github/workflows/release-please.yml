@@ -13,31 +13,27 @@ jobs:
       contents: write # Contents and pull-requests are for release-please to make releases.
       pull-requests: write
     steps:
-      - uses: google-github-actions/release-please-action@v3
+      - uses: googleapis/release-please-action@v4
         id: release
-        with:
-          command: manifest
-          token: ${{secrets.GITHUB_TOKEN}}
-          default-branch: main
 
       - uses: actions/checkout@v4
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         with:
           fetch-depth: 0 # If you only need the current version keep this.
 
-      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.0.0
-        if: ${{ steps.release.outputs.releases_created }}
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         name: 'Get rubygems API key'
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
           ssm_parameter_pairs: '/production/common/releasing/rubygems/api_key = GEM_HOST_API_KEY'
 
       - uses: ./.github/actions/ci
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         with:
           ruby-version: 2.6
 
       - uses: ./.github/actions/publish
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         with:
           dry_run: false
