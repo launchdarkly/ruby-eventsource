@@ -37,3 +37,5 @@ jobs:
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         with:
           dry_run: false
+        env:
+          GEM_HOST_API_KEY: ${{ env.GEM_HOST_API_KEY }}
