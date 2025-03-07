@@ -34,3 +34,5 @@ jobs:
         uses: ./.github/actions/publish
         with:
           dry_run: ${{ inputs.dry_run }}
+        env:
+          GEM_HOST_API_KEY: ${{ env.GEM_HOST_API_KEY }}
