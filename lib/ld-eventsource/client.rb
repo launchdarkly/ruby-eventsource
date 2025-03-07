@@ -141,9 +141,7 @@ module SSE
 
       yield self if block_given?
 
-      Thread.new do
-        run_stream
-      end
+      Thread.new { run_stream }.name = 'LD/SSEClient'
     end
 
     #
