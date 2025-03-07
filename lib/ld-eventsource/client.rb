@@ -143,7 +143,7 @@ module SSE
 
       Thread.new do
         run_stream
-      end
+      end.name = "SSE/Client/host:#{uri.host}"
     end
 
     #
