@@ -85,6 +85,10 @@ module SSE
     #   if you want to use something other than the default `TCPSocket`; it must implement
     #   `open(uri, timeout)` to return a connected `Socket`
     # @yieldparam [Client] client  the new client instance, before opening the connection
+    # @payload payload [String | Hash | Array] (nil) optional request payload. If payload is
+    #   provided, a POST request will be used, instead of a GET request. If payload is a Hash or
+    #   an Array, it will be converted to JSON and sent as the request body. Also, reconnection
+    #   is disabled if payload is set.
     #
     def initialize(uri,
           headers: {},
@@ -95,13 +99,15 @@ module SSE
           last_event_id: nil,
           proxy: nil,
           logger: nil,
-          socket_factory: nil)
+          socket_factory: nil,
+          payload: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
 
       @headers = headers.clone
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
+      @payload = payload
       @logger = logger || default_logger
       http_client_options = {}
       if socket_factory
@@ -243,6 +249,8 @@ module SSE
         end
         begin
           reset_http
+          # When we post request with payload, reconnection should be avoided.
+          close if @payload
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
@@ -262,9 +270,8 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          cxn = @http_client.request("GET", @uri, {
-            headers: build_headers
-          })
+          verb = @payload ? "POST" : "GET"
+          cxn = @http_client.request(verb, @uri, build_opts)
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
             if content_type && content_type.start_with?("text/event-stream")
@@ -357,6 +364,16 @@ module SSE
       }
       h['Last-Event-Id'] = @last_id if !@last_id.nil? && @last_id != ""
       h.merge(@headers)
+    end
+
+    def build_opts
+      return {headers: build_headers} if @payload.nil?
+
+      if @payload.is_a?(Hash) || @payload.is_a?(Array)
+        {headers: build_headers, json: @payload}
+      else
+        {headers: build_headers, body: @payload.to_s}
+      end
     end
   end
 end
