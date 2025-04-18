@@ -31,9 +31,10 @@ EOT
     begin
       yield client
     ensure
-      client.close
+      raise 'Failed to close within timeout' unless client.close_and_wait(1)
     end
   end
+
 
   def send_stream_content(res, content, keep_open:)
     res.content_type = "text/event-stream"
@@ -57,7 +58,7 @@ EOT
         requests << req
         send_stream_content(res, "", keep_open: true)
       end
-      
+
       headers = { "Authorization" => "secret" }
 
       with_client(subject.new(server.base_uri, headers: headers)) do |client|
@@ -82,7 +83,7 @@ EOT
         requests << req
         send_stream_content(res, "", keep_open: true)
       end
-      
+
       headers = { "Authorization" => "secret" }
 
       with_client(subject.new(server.base_uri, headers: headers, last_event_id: id)) do |client|
@@ -438,7 +439,7 @@ EOT
       server.setup_response("/") do |req,res|
         send_stream_content(res, "", keep_open: true)
       end
-      
+
       with_client(subject.new(server.base_uri)) do |client|
         expect(client.closed?).to be(false)
 

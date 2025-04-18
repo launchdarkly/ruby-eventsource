@@ -98,6 +98,7 @@ module SSE
           socket_factory: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
+      @shutdown = Concurrent::Event.new
 
       @headers = headers.clone
       @connect_timeout = connect_timeout
@@ -141,11 +142,8 @@ module SSE
 
       yield self if block_given?
 
-      @thread = Thread.new { run_stream }
-      @thread.name = 'LD/SSEClient'
+      Thread.new { run_stream }.name = 'LD/SSEClient'
     end
-
-    attr_reader :thread
 
     #
     # Specifies a block or Proc to receive events from the stream. This will be called once for every
@@ -188,9 +186,22 @@ module SSE
     # has no effect if called a second time.
     #
     def close
-      if @stopped.make_true
-        reset_http
-      end
+      reset_http if @stopped.make_true
+    end
+
+    #
+    # Permanently shuts down the client and its connection, and waits until shutdown is complete. No further events will be dispatched. This
+    # has no effect if called a second time.
+    #
+    # If a timeout is specified, the method will return after that amount of time has passed, even if the shutdown is
+    # not complete.
+    #
+    # @param timeout [Float] (nil)  maximum time to wait for shutdown, in seconds
+    # @return [Boolean] true if the shutdown completed successfully, false if it timed out
+    #
+    def close_and_wait(timeout = nil)
+      close
+      @shutdown.wait(timeout)
     end
 
     #
@@ -233,7 +244,8 @@ module SSE
           end
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
-          return if @stopped.value
+          break if @stopped.value
+
           read_stream(resp) if !resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
@@ -244,12 +256,15 @@ module SSE
             log_and_dispatch_error(e, "Unexpected error from event source")
           end
         end
+
         begin
           reset_http
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
       end
+
+      @shutdown.set
     end
 
     # Try to establish a streaming connection. Returns the StreamingHTTPConnection object if successful.
