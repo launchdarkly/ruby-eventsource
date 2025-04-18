@@ -141,8 +141,11 @@ module SSE
 
       yield self if block_given?
 
-      Thread.new { run_stream }.name = 'LD/SSEClient'
+      @thread = Thread.new { run_stream }
+      @thread.name = 'LD/SSEClient'
     end
+
+    attr_reader :thread
 
     #
     # Specifies a block or Proc to receive events from the stream. This will be called once for every
