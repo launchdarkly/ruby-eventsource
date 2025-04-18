@@ -3,7 +3,6 @@
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "ld-eventsource/version"
-require "rake"
 
 # rubocop:disable Metrics/BlockLength
 Gem::Specification.new do |spec|
@@ -16,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/launchdarkly/ruby-eventsource"
   spec.license       = "Apache-2.0"
 
-  spec.files         = FileList["lib/**/*", "README.md", "LICENSE"]
+  spec.files         = Dir.glob("lib/**/*") + ["README.md", "LICENSE"]
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
