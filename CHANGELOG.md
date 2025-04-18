@@ -2,6 +2,13 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.2.4](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.3...2.2.4) (2025-04-18)
+
+
+### Bug Fixes
+
+* Remove rake dependency from gemspec ([#53](https://github.com/launchdarkly/ruby-eventsource/issues/53)) ([8be0ccc](https://github.com/launchdarkly/ruby-eventsource/commit/8be0ccc1572aa6600e03833ac3d37a231b4c14f9))
+
 ## [2.2.3](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.2...2.2.3) (2025-03-07)
 
 
