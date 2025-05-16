@@ -142,7 +142,8 @@ module SSE
 
       yield self if block_given?
 
-      Thread.new { run_stream }.name = 'LD/SSEClient'
+      @thread = Thread.new { run_stream }
+      @thread.name = 'LD/SSEClient'
     end
 
     #
@@ -187,6 +188,15 @@ module SSE
     #
     def close
       reset_http if @stopped.make_true
+    end
+
+    #
+    # Permanently shuts down the client and its connection, and kills the background worker thread. No further events will be dispatched. This
+    # has no effect if called a second time.
+    #
+    def kill
+      close
+      @thread&.kill
     end
 
     #
