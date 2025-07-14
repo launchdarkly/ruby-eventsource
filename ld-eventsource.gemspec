@@ -1,6 +1,6 @@
 # coding: utf-8
 
-lib = File.expand_path('lib', __DIR__)
+lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'ld-eventsource/version'
 
@@ -21,6 +21,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bundler', '2.2.10'
   spec.add_development_dependency 'rspec', '~> 3.2'
   spec.add_development_dependency 'rspec_junit_formatter', '~> 0.3.0'
+  spec.add_development_dependency "rubocop", "~> 1.37"
+  spec.add_development_dependency "rubocop-performance", "~> 1.15"
   spec.add_development_dependency 'webrick', '~> 1.7'
 
   spec.add_runtime_dependency 'concurrent-ruby', '~> 1.0'

@@ -52,7 +52,7 @@ module SSE
         initial = 0
         max = 60
         b = Backoff.new(initial, max)
-        
+
         for i in 1..6 do
           interval = b.next_interval
           expect(interval).to eq(0)

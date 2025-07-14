@@ -120,14 +120,14 @@ module SSE
       if @proxy
         http_client_options["proxy"] = {
           :proxy_address => @proxy.host,
-          :proxy_port => @proxy.port
+          :proxy_port => @proxy.port,
         }
       end
 
       @http_client = HTTP::Client.new(http_client_options)
         .timeout({
           read: read_timeout,
-          connect: connect_timeout
+          connect: connect_timeout,
         })
       @cxn = nil
       @lock = Mutex.new
@@ -202,13 +202,13 @@ module SSE
     private
 
     def reset_http
-      @http_client.close if !@http_client.nil?
+      @http_client.close unless @http_client.nil?
       close_connection
     end
 
     def close_connection
       @lock.synchronize do
-        @cxn.connection.close if !@cxn.nil?
+        @cxn.connection.close unless @cxn.nil?
         @cxn = nil
       end
     end
@@ -216,12 +216,12 @@ module SSE
     def default_logger
       log = ::Logger.new($stdout)
       log.level = ::Logger::WARN
-      log.progname  = 'ld-eventsource'
+      log.progname = 'ld-eventsource'
       log
     end
 
     def run_stream
-      while !@stopped.value
+      until @stopped.value
         close_connection
         begin
           resp = connect
@@ -231,7 +231,7 @@ module SSE
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
           return if @stopped.value
-          read_stream(resp) if !resp.nil?
+          read_stream(resp) unless resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
           # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
@@ -263,7 +263,7 @@ module SSE
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
           cxn = @http_client.request("GET", @uri, {
-            headers: build_headers
+            headers: build_headers,
           })
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
@@ -332,7 +332,7 @@ module SSE
 
     def dispatch_event(event)
       @logger.debug { "Received event: #{event}" }
-      @last_id = event.id if !event.id.nil?
+      @last_id = event.id unless event.id.nil?
 
       # Pass the event to the caller
       @on[:event].call(event)
@@ -353,7 +353,7 @@ module SSE
       h = {
         'Accept' => 'text/event-stream',
         'Cache-Control' => 'no-cache',
-        'User-Agent' => 'ruby-eventsource'
+        'User-Agent' => 'ruby-eventsource',
       }
       h['Last-Event-Id'] = @last_id if !@last_id.nil? && @last_id != ""
       h.merge(@headers)

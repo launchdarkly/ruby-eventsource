@@ -34,12 +34,12 @@ module SSE
       # @return [Float]  the next interval in seconds
       #
       def next_interval
-        if !@last_good_time.nil?
+        unless @last_good_time.nil?
           good_duration = Time.now.to_f - @last_good_time
           @attempts = 0 if good_duration >= @reconnect_reset_interval
         end
         @last_good_time = nil
-        target = ([@base_interval * (2 ** @attempts), @max_interval].min).to_f
+        target = [@base_interval * (2 ** @attempts), @max_interval].min.to_f
         @attempts += 1
         if target == 0
           0  # in some Ruby versions it's illegal to call rand(0)

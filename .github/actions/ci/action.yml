@@ -1,8 +1,8 @@
 name: CI Workflow
-description: 'Shared CI workflow.'
+description: "Shared CI workflow."
 inputs:
   ruby-version:
-    description: 'The version of ruby to setup and run'
+    description: "The version of ruby to setup and run"
     required: true
 
 runs:
@@ -25,6 +25,10 @@ runs:
     - name: Run tests
       shell: bash
       run: bundle _2.2.10_ exec rspec spec
+
+    - name: Run RuboCop
+      shell: bash
+      run: bundle exec rubocop --parallel
 
     - name: Run contract tests
       if: ${{ !startsWith(inputs.ruby-version, 'jruby') }}

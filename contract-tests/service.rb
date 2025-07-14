@@ -22,8 +22,8 @@ get '/' do
     capabilities: [
       'headers',
       'last-event-id',
-      'read-timeout'
-    ]
+      'read-timeout',
+    ],
   }.to_json
 end
 

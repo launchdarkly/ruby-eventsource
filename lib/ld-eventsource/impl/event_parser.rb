@@ -36,7 +36,7 @@ module SSE
             if line.empty?
               event = maybe_create_event
               reset_buffers
-              gen.yield event if !event.nil?
+              gen.yield event unless event.nil?
             elsif (pos = line.index(':'))
               name = line.slice(0...pos)
 
@@ -45,7 +45,7 @@ module SSE
               line = line.slice(pos..-1)
 
               item = process_field(name, line)
-              gen.yield item if !item.nil?
+              gen.yield item unless item.nil?
             end
           end
         end
@@ -72,7 +72,7 @@ module SSE
             end
             @have_data = true
           when "id"
-            if !value.include?("\x00")
+            unless value.include?("\x00")
               @id = value
               @last_event_id = value
             end
@@ -85,7 +85,7 @@ module SSE
       end
 
       def maybe_create_event
-        return nil if !@have_data
+        return nil unless @have_data
         StreamEvent.new(@type || :message, @data, @id, @last_event_id)
       end
     end

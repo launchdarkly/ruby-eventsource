@@ -6,7 +6,7 @@ require "http_stub"
 #
 describe SSE::Client do
   before(:each) do
-    skip("end-to-end HTTP tests are disabled because they're unreliable on this platform") if !stub_http_server_available?
+    skip("end-to-end HTTP tests are disabled because they're unreliable on this platform") unless stub_http_server_available?
   end
 
   subject { SSE::Client }
@@ -57,7 +57,7 @@ EOT
         requests << req
         send_stream_content(res, "", keep_open: true)
       end
-      
+
       headers = { "Authorization" => "secret" }
 
       with_client(subject.new(server.base_uri, headers: headers)) do |client|
@@ -68,7 +68,7 @@ EOT
           "host" => ["127.0.0.1:" + server.port.to_s],
           "authorization" => ["secret"],
           "user-agent" => ["ruby-eventsource"],
-          "connection" => ["close"]
+          "connection" => ["close"],
         })
       end
     end
@@ -82,7 +82,7 @@ EOT
         requests << req
         send_stream_content(res, "", keep_open: true)
       end
-      
+
       headers = { "Authorization" => "secret" }
 
       with_client(subject.new(server.base_uri, headers: headers, last_event_id: id)) do |client|
@@ -94,7 +94,7 @@ EOT
           "authorization" => ["secret"],
           "last-event-id" => [id],
           "user-agent" => ["ruby-eventsource"],
-          "connection" => ["close"]
+          "connection" => ["close"],
         })
       end
     end
@@ -438,7 +438,7 @@ EOT
       server.setup_response("/") do |req,res|
         send_stream_content(res, "", keep_open: true)
       end
-      
+
       with_client(subject.new(server.base_uri)) do |client|
         expect(client.closed?).to be(false)
 
