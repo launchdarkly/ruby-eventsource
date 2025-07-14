@@ -43,6 +43,7 @@ runs:
       run: make start-contract-test-service-bg
 
     - uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1.1.0
+      if: ${{ !startsWith(inputs.ruby-version, 'jruby') }}
       with:
         test_service_port: 8000
         token: ${{ inputs.token }}
