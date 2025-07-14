@@ -4,6 +4,9 @@ inputs:
   ruby-version:
     description: "The version of ruby to setup and run"
     required: true
+  token:
+    description: "GH token used to fetch the SDK test harness"
+    required: true
 
 runs:
   using: composite
@@ -42,6 +45,6 @@ runs:
     - uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1.1.0
       with:
         test_service_port: 8000
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.token }}
         repo: sse-contract-tests
         branch: main

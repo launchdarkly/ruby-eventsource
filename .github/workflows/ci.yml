@@ -31,3 +31,4 @@ jobs:
       - uses: ./.github/actions/ci
         with:
           ruby-version: ${{ matrix.ruby-version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
