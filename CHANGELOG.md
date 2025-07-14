@@ -2,6 +2,14 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.2.5](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.4...2.2.5) (2025-07-14)
+
+
+### Bug Fixes
+
+* Bump minimum to ruby 3.1 ([#57](https://github.com/launchdarkly/ruby-eventsource/issues/57)) ([93a9947](https://github.com/launchdarkly/ruby-eventsource/commit/93a994783aa3aa922a213670a3c6183206d8bd8d))
+* Explicitly mark buffer variable as unfrozen ([#59](https://github.com/launchdarkly/ruby-eventsource/issues/59)) ([ccf79af](https://github.com/launchdarkly/ruby-eventsource/commit/ccf79af7a541c976298231b7a34c5f5bd0bd8fff))
+
 ## [2.2.4](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.3...2.2.4) (2025-04-18)
 
 
