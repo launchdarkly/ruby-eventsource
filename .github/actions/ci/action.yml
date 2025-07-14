@@ -29,6 +29,7 @@ runs:
       run: bundle exec rspec spec
 
     - name: Run RuboCop
+      if: ${{ !startsWith(inputs.ruby-version, 'jruby') }}
       shell: bash
       run: bundle exec rubocop --parallel
 
