@@ -1,13 +1,13 @@
 name: Run CI
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths-ignore:
-      - '**.md' # Do not need to run CI for markdown changes.
+      - "**.md" # Do not need to run CI for markdown changes.
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths-ignore:
-      - '**.md'
+      - "**.md"
 
 jobs:
   build:

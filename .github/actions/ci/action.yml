@@ -11,11 +11,10 @@ runs:
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ inputs.ruby-version }}
-        bundler: 2.2.10
 
     - name: Install dependencies
       shell: bash
-      run: bundle _2.2.10_ install
+      run: bundle install
 
     - name: Skip end to end tests for jruby
       if: ${{ startsWith(inputs.ruby-version, 'jruby') }}
@@ -24,7 +23,7 @@ runs:
 
     - name: Run tests
       shell: bash
-      run: bundle _2.2.10_ exec rspec spec
+      run: bundle exec rspec spec
 
     - name: Run RuboCop
       shell: bash
