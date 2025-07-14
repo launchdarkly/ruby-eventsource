@@ -50,3 +50,4 @@ runs:
         token: ${{ inputs.token }}
         repo: sse-contract-tests
         branch: main
+        version: v1
