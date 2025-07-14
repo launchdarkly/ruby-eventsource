@@ -1,4 +1,3 @@
-
 module SSE
   module Impl
     class BufferedLineReader
@@ -16,7 +15,7 @@ module SSE
       # @return [Enumerator]  an enumerator that will yield one line at a time in UTF-8
       #
       def self.lines_from(chunks)
-        buffer = "".b
+        buffer = +"".b
         position = 0
         line_start = 0
         last_char_was_cr = false
