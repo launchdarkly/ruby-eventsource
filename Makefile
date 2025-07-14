@@ -1,10 +1,10 @@
 TEMP_TEST_OUTPUT=/tmp/sse-contract-test-service.log
 
 build-contract-tests:
-	@cd contract-tests && bundle _2.2.10_ install
+	@cd contract-tests && bundle install
 
 start-contract-test-service:
-	@cd contract-tests && bundle _2.2.10_ exec ruby service.rb
+	@cd contract-tests && bundle exec ruby service.rb
 
 start-contract-test-service-bg:
 	@echo "Test service output will be captured in $(TEMP_TEST_OUTPUT)"

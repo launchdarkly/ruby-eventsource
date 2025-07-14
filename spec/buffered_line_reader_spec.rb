@@ -4,7 +4,7 @@ def make_tests(name, input_line_chunks:, expected_lines:)
   [{
     name: "#{name}: one chunk per line",
     chunks: input_line_chunks,
-    expected: expected_lines
+    expected: expected_lines,
   }].concat(
     (1..4).map do |size|
       # Here we're lumping together all the content into one string and then
@@ -13,11 +13,11 @@ def make_tests(name, input_line_chunks:, expected_lines:)
       # chunks would be ["ab", "cd", "\ne", "fg", "\n"]. This helps to find edge
       # case problems related to line terminators falling at the start of a chunk
       # or in the middle, etc.
-      ({
+      {
         name: "#{name}: #{size}-character chunks",
         chunks: input_line_chunks.join().chars.each_slice(size).map { |a| a.join },
-        expected: expected_lines
-      })
+        expected: expected_lines,
+      }
     end
   )
 end
@@ -43,7 +43,7 @@ def tests_for_terminator(term, desc)
     make_tests("multi-line chunks",
       input_line_chunks: ["first line" + term + "second line" + term + "third",
        " line" + term + "fourth line" + term],
-      expected_lines: ["first line", "second line", "third line", "fourth line"])
+      expected_lines: ["first line", "second line", "third line", "fourth line"]),
   ].flatten
 end
 
@@ -53,7 +53,7 @@ describe SSE::Impl::BufferedLineReader do
   terminators = {
     "CR": "\r",
     "LF": "\n",
-    "CRLF": "\r\n"
+    "CRLF": "\r\n",
   }
 
   terminators.each do |desc, term|

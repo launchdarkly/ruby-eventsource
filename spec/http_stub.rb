@@ -62,7 +62,7 @@ class StubProxyServer < StubHTTPServer
       AccessLog: [],
       Logger: NullLogger.new,
       ProxyContentHandler: proc do |req,res|
-        if !@connect_status.nil?
+        unless @connect_status.nil?
           res.status = @connect_status
         end
         @request_count += 1
