@@ -22,8 +22,8 @@ module SSE
 
         Enumerator.new do |gen|
           chunks.each do |chunk|
-            chunk.force_encoding("ASCII-8BIT")
-            buffer << chunk
+            chunk = chunk.dup.force_encoding("ASCII-8BIT")
+            buffer += chunk
 
             loop do
               # Search for a line break in any part of the buffer that we haven't yet seen.
