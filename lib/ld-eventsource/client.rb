@@ -6,6 +6,7 @@ require "ld-eventsource/errors"
 
 require "concurrent/atomics"
 require "logger"
+require "openssl"
 require "thread"
 require "uri"
 require "http"
@@ -91,6 +92,7 @@ module SSE
     #   request to generate the payload dynamically.
     # @param retry_enabled [Boolean] (true)  whether to retry connections after failures. If false, the client
     #   will exit after the first connection failure instead of attempting to reconnect.
+    # @param verify_ssl [Boolean] (true) whether to verify SSL certificates; set to false for development/testing
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -105,7 +107,8 @@ module SSE
           socket_factory: nil,
           method: "GET",
           payload: nil,
-          retry_enabled: true)
+          retry_enabled: true,
+          verify_ssl: true)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
       @retry_enabled = retry_enabled
@@ -117,6 +120,9 @@ module SSE
       @payload = payload
       @logger = logger || default_logger
       http_client_options = {}
+      unless verify_ssl
+        http_client_options[:ssl] = { verify_mode: OpenSSL::SSL::VERIFY_NONE }
+      end
       if socket_factory
         http_client_options["socket_class"] = socket_factory
       end
