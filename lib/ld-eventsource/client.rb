@@ -84,11 +84,11 @@ module SSE
     # @param socket_factory [#open] (nil)  an optional factory object for creating sockets,
     #   if you want to use something other than the default `TCPSocket`; it must implement
     #   `open(uri, timeout)` to return a connected `Socket`
-    # @yieldparam [Client] client  the new client instance, before opening the connection
-    # @payload payload [String | Hash | Array] (nil) optional request payload. If payload is
-    #   provided, a POST request will be used, instead of a GET request. If payload is a Hash or
+    # @param method [String] ("GET")  the HTTP method to use for requests
+    # @param payload [String, Hash, Array] (nil)  optional request payload. If payload is a Hash or
     #   an Array, it will be converted to JSON and sent as the request body. Also, reconnection
     #   is disabled if payload is set.
+    # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
           headers: {},
@@ -100,6 +100,7 @@ module SSE
           proxy: nil,
           logger: nil,
           socket_factory: nil,
+          method: "GET",
           payload: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
@@ -107,6 +108,7 @@ module SSE
       @headers = headers.clone
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
+      @method = method.to_s.upcase
       @payload = payload
       @logger = logger || default_logger
       http_client_options = {}
@@ -270,8 +272,7 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          verb = @payload ? "POST" : "GET"
-          cxn = @http_client.request(verb, @uri, build_opts)
+          cxn = @http_client.request(@method, @uri, build_opts)
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
             if content_type && content_type.start_with?("text/event-stream")
