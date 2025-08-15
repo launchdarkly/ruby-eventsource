@@ -22,8 +22,8 @@ get '/' do
     capabilities: [
       'headers',
       'last-event-id',
-      'read-timeout'
-    ]
+      'read-timeout',
+    ],
   }.to_json
 end
 
@@ -58,8 +58,8 @@ post '/' do
     last_event_id: opts[:lastEventId],
     read_timeout: opts[:readTimeoutMs].nil? ? nil : (opts[:readTimeoutMs].to_f / 1000),
     reconnect_time: opts[:initialDelayMs].nil? ? nil : (opts[:initialDelayMs].to_f / 1000)
-  ) do |sse|
-    entity = StreamEntity.new(sse, tag, callbackUrl)
+  ) do |client|
+    entity = StreamEntity.new(client, tag, callbackUrl)
   end
 
   streams[streamId] = entity

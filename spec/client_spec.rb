@@ -6,7 +6,7 @@ require "http_stub"
 #
 describe SSE::Client do
   before(:each) do
-    skip("end-to-end HTTP tests are disabled because they're unreliable on this platform") if !stub_http_server_available?
+    skip("end-to-end HTTP tests are disabled because they're unreliable on this platform") unless stub_http_server_available?
   end
 
   subject { SSE::Client }
@@ -68,7 +68,7 @@ EOT
           "host" => ["127.0.0.1:" + server.port.to_s],
           "authorization" => ["secret"],
           "user-agent" => ["ruby-eventsource"],
-          "connection" => ["close"]
+          "connection" => ["close"],
         })
       end
     end
@@ -94,7 +94,7 @@ EOT
           "authorization" => ["secret"],
           "last-event-id" => [id],
           "user-agent" => ["ruby-eventsource"],
-          "connection" => ["close"]
+          "connection" => ["close"],
         })
       end
     end
@@ -112,7 +112,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         expect(event_sink.pop).to eq(simple_event_1)
         expect(event_sink.pop).to eq(simple_event_2)
       end
@@ -133,9 +133,9 @@ EOT
         c.on_error { |error| error_sink << error }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         event_sink.pop  # wait till we have definitely started reading the stream
-        client.close
+        c.close
         sleep 0.25  # there's no way to really know when the stream thread has finished
         expect(error_sink.empty?).to be true
       end
@@ -164,7 +164,7 @@ EOT
         c.on_error { |error| error_sink << error }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         expect(event_sink.pop).to eq(simple_event_1)
         expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "sorry"))
         expect(attempt).to eq 2
@@ -195,7 +195,7 @@ EOT
         c.on_error { |error| error_sink << error }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         expect(event_sink.pop).to eq(simple_event_1)
         expect(error_sink.pop).to eq(SSE::Errors::HTTPContentTypeError.new("text/plain"))
         expect(attempt).to eq 2
@@ -220,7 +220,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         expect(event_sink.pop).to eq(simple_event_1)
         expect(attempt).to eq 2
       end
@@ -241,7 +241,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         expect(event_sink.pop).to eq(simple_event_1)
         expect(event_sink.pop).to eq(simple_event_2)
         expect(attempt).to eq 2
@@ -268,7 +268,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         req1 = requests.pop
         req2 = requests.pop
         expect(req2.header["last-event-id"]).to eq([ "a" ])
@@ -294,7 +294,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         last_interval = nil
         max_requests.times do |i|
           expect(event_sink.pop).to eq(simple_event_1)
@@ -334,7 +334,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         last_interval = nil
         max_requests.times do |i|
           expect(event_sink.pop).to eq(simple_event_1)
@@ -369,7 +369,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         expect(event_sink.pop).to eq(simple_event_1)
         interval = request_times[1] - request_times[0]
         expect(interval).to be < 0.5
@@ -389,7 +389,7 @@ EOT
           c.on_event { |event| event_sink << event }
         end
 
-        with_client(client) do |client|
+        with_client(client) do |c|
           expect(event_sink.pop).to eq(simple_event_1)
           expect(proxy.request_count).to eq(1)
         end
@@ -424,7 +424,7 @@ EOT
         c.on_event { |event| event_sink << event }
       end
 
-      with_client(client) do |client|
+      with_client(client) do |c|
         4.times {
           expect(event_sink.pop).to eq(simple_event_1)
         }

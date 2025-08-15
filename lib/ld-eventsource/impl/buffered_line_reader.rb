@@ -1,4 +1,3 @@
-
 module SSE
   module Impl
     class BufferedLineReader
@@ -16,15 +15,15 @@ module SSE
       # @return [Enumerator]  an enumerator that will yield one line at a time in UTF-8
       #
       def self.lines_from(chunks)
-        buffer = "".b
+        buffer = +"".b
         position = 0
         line_start = 0
         last_char_was_cr = false
 
         Enumerator.new do |gen|
           chunks.each do |chunk|
-            chunk.force_encoding("ASCII-8BIT")
-            buffer << chunk
+            chunk = chunk.dup.force_encoding("ASCII-8BIT")
+            buffer += chunk
 
             loop do
               # Search for a line break in any part of the buffer that we haven't yet seen.

@@ -23,8 +23,8 @@ class StreamEntity
       event: {
         type: event.type,
         data: event.data,
-        id: event.last_event_id
-      }
+        id: event.last_event_id,
+      },
     }
     self.send_message(message)
   end
@@ -33,7 +33,7 @@ class StreamEntity
     $log.info("#{@tag} Received error from stream: #{error}")
     message = {
       kind: 'error',
-      error: error
+      error: error,
     }
     self.send_message(message)
   end

@@ -12,10 +12,10 @@ describe SSE::Impl::EventParser do
   it "parses an event with only data" do
     lines = [
       "data: def",
-      ""
+      "",
     ]
     ep = subject.new(lines)
-    
+
     expected_event = SSE::StreamEvent.new(:message, "def", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
@@ -26,10 +26,10 @@ describe SSE::Impl::EventParser do
       "event: abc",
       "data: def",
       "id: 1",
-      ""
+      "",
     ]
     ep = subject.new(lines)
-    
+
     expected_event = SSE::StreamEvent.new(:abc, "def", "1", "1")
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
@@ -39,10 +39,10 @@ describe SSE::Impl::EventParser do
     lines = [
       "event: abc",
       "data: def",
-      ""
+      "",
     ]
     ep = subject.new(lines, "1")
-    
+
     expected_event = SSE::StreamEvent.new(:abc, "def", nil, "1")
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
@@ -53,10 +53,10 @@ describe SSE::Impl::EventParser do
       "event: abc",
       "data: def",
       "id:",
-      ""
+      "",
     ]
     ep = subject.new(lines, "1")
-    
+
     expected_event = SSE::StreamEvent.new(:abc, "def", "", "")
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
@@ -68,23 +68,23 @@ describe SSE::Impl::EventParser do
       "event: abc",
       "data: def",
       "id: 12\x0034",
-      ""
+      "",
     ]
     ep = subject.new(lines, "1")
-    
+
     expected_event = SSE::StreamEvent.new(:abc, "def", nil, "1")
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
   end
-  
+
   it "parses an event with multi-line data" do
     lines = [
       "data: def",
       "data: ghi",
-      ""
+      "",
     ]
     ep = subject.new(lines)
-    
+
     expected_event = SSE::StreamEvent.new(:message, "def\nghi", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
@@ -94,10 +94,10 @@ describe SSE::Impl::EventParser do
     verify_parsed_events(
       lines: [
         "data:",
-        ""
+        "",
       ],
       expected_events: [
-        SSE::StreamEvent.new(:message, "", nil)
+        SSE::StreamEvent.new(:message, "", nil),
       ])
   end
 
@@ -106,10 +106,10 @@ describe SSE::Impl::EventParser do
       lines: [
         "data:",
         "data: abc",
-        ""
+        "",
       ],
       expected_events: [
-        SSE::StreamEvent.new(:message, "\nabc", nil)
+        SSE::StreamEvent.new(:message, "\nabc", nil),
       ])
   end
 
@@ -119,10 +119,10 @@ describe SSE::Impl::EventParser do
         "data:",
         "data:",
         "data: abc",
-        ""
+        "",
       ],
       expected_events: [
-        SSE::StreamEvent.new(:message, "\n\nabc", nil)
+        SSE::StreamEvent.new(:message, "\n\nabc", nil),
       ])
   end
 
@@ -132,10 +132,10 @@ describe SSE::Impl::EventParser do
         "data: abc",
         "data:",
         "data: def",
-        ""
+        "",
       ],
       expected_events: [
-        SSE::StreamEvent.new(:message, "abc\n\ndef", nil)
+        SSE::StreamEvent.new(:message, "abc\n\ndef", nil),
       ])
   end
 
@@ -144,10 +144,10 @@ describe SSE::Impl::EventParser do
       lines: [
         "data: abc",
         "data:",
-        ""
+        "",
       ],
       expected_events: [
-        SSE::StreamEvent.new(:message, "abc\n", nil)
+        SSE::StreamEvent.new(:message, "abc\n", nil),
       ])
   end
 
@@ -156,10 +156,10 @@ describe SSE::Impl::EventParser do
       ":",
       "data: def",
       ":",
-      ""
+      "",
     ]
     ep = subject.new(lines)
-    
+
     expected_event = SSE::StreamEvent.new(:message, "def", nil)
     output = ep.items.to_a
     expect(output).to eq([ expected_event ])
@@ -168,7 +168,7 @@ describe SSE::Impl::EventParser do
   it "parses reconnect interval" do
     lines = [
       "retry: 2500",
-      ""
+      "",
     ]
     ep = subject.new(lines)
 
@@ -184,10 +184,10 @@ describe SSE::Impl::EventParser do
       "id: 1",
       "",
       "data: ghi",
-      ""
+      "",
     ]
     ep = subject.new(lines)
-    
+
     expected_event_1 = SSE::StreamEvent.new(:abc, "def", "1", "1")
     expected_event_2 = SSE::StreamEvent.new(:message, "ghi", nil, "1")
     output = ep.items.to_a
@@ -199,10 +199,10 @@ describe SSE::Impl::EventParser do
       "event: nothing",
       "",
       "event: nada",
-      ""
+      "",
     ]
     ep = subject.new(lines)
-    
+
     output = ep.items.to_a
     expect(output).to eq([])
   end

@@ -30,7 +30,7 @@ module SSE
     #
     class HTTPContentTypeError < StandardError
       def initialize(type)
-        @content_type =  type
+        @content_type = type
         super("invalid content type \"#{type}\"")
       end
 

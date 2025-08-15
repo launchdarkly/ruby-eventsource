@@ -2,6 +2,29 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.2.6](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.5...2.2.6) (2025-07-15)
+
+
+### Bug Fixes
+
+* Add `logger` as explicit dependency ([#61](https://github.com/launchdarkly/ruby-eventsource/issues/61)) ([50efb0d](https://github.com/launchdarkly/ruby-eventsource/commit/50efb0d8d6eae1c30d5fae138dfbaa230d57d3b3))
+* Update `force_encoding` to operate on unfrozen string ([#60](https://github.com/launchdarkly/ruby-eventsource/issues/60)) ([0e2e80d](https://github.com/launchdarkly/ruby-eventsource/commit/0e2e80dc1d6515c09546ab250d5122f87b3fa013))
+
+## [2.2.5](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.4...2.2.5) (2025-07-14)
+
+
+### Bug Fixes
+
+* Bump minimum to ruby 3.1 ([#57](https://github.com/launchdarkly/ruby-eventsource/issues/57)) ([93a9947](https://github.com/launchdarkly/ruby-eventsource/commit/93a994783aa3aa922a213670a3c6183206d8bd8d))
+* Explicitly mark buffer variable as unfrozen ([#59](https://github.com/launchdarkly/ruby-eventsource/issues/59)) ([ccf79af](https://github.com/launchdarkly/ruby-eventsource/commit/ccf79af7a541c976298231b7a34c5f5bd0bd8fff))
+
+## [2.2.4](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.3...2.2.4) (2025-04-18)
+
+
+### Bug Fixes
+
+* Remove rake dependency from gemspec ([#53](https://github.com/launchdarkly/ruby-eventsource/issues/53)) ([8be0ccc](https://github.com/launchdarkly/ruby-eventsource/commit/8be0ccc1572aa6600e03833ac3d37a231b4c14f9))
+
 ## [2.2.3](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.2...2.2.3) (2025-03-07)
 
 
