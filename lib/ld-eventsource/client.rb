@@ -86,8 +86,9 @@ module SSE
     #   `open(uri, timeout)` to return a connected `Socket`
     # @param method [String] ("GET")  the HTTP method to use for requests
     # @param payload [String, Hash, Array, #call] (nil)  optional request payload. If payload is a Hash or
-    #   an Array, it will be converted to JSON and sent as the request body. If payload responds to #call,
-    #   it will be invoked on each request to generate the payload dynamically.
+    #   an Array, it will be converted to JSON and sent as the request body. A string will be sent as a non-JSON
+    #   request body. If payload responds to #call, it will be invoked on each
+    #   request to generate the payload dynamically.
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
