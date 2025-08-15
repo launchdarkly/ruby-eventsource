@@ -85,9 +85,9 @@ module SSE
     #   if you want to use something other than the default `TCPSocket`; it must implement
     #   `open(uri, timeout)` to return a connected `Socket`
     # @param method [String] ("GET")  the HTTP method to use for requests
-    # @param payload [String, Hash, Array] (nil)  optional request payload. If payload is a Hash or
-    #   an Array, it will be converted to JSON and sent as the request body. Also, reconnection
-    #   is disabled if payload is set.
+    # @param payload [String, Hash, Array, #call] (nil)  optional request payload. If payload is a Hash or
+    #   an Array, it will be converted to JSON and sent as the request body. If payload responds to #call,
+    #   it will be invoked on each request to generate the payload dynamically.
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -251,8 +251,6 @@ module SSE
         end
         begin
           reset_http
-          # When we post request with payload, reconnection should be avoided.
-          close if @payload
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
@@ -370,10 +368,13 @@ module SSE
     def build_opts
       return {headers: build_headers} if @payload.nil?
 
-      if @payload.is_a?(Hash) || @payload.is_a?(Array)
-        {headers: build_headers, json: @payload}
+      # Resolve payload if it's callable
+      resolved_payload = @payload.respond_to?(:call) ? @payload.call : @payload
+
+      if resolved_payload.is_a?(Hash) || resolved_payload.is_a?(Array)
+        {headers: build_headers, json: resolved_payload}
       else
-        {headers: build_headers, body: @payload.to_s}
+        {headers: build_headers, body: resolved_payload.to_s}
       end
     end
   end
