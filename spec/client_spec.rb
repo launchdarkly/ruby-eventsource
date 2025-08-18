@@ -447,4 +447,294 @@ EOT
       end
     end
   end
+
+  describe "HTTP method parameter" do
+    it "defaults to GET method" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("GET")
+        end
+      end
+    end
+
+    it "uses explicit GET method" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri, method: "GET")) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("GET")
+        end
+      end
+    end
+
+    it "uses explicit POST method" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri, method: "POST")) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+        end
+      end
+    end
+
+    it "normalizes method to uppercase" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri, method: "post")) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+        end
+      end
+    end
+  end
+
+  describe "payload parameter" do
+    it "sends string payload as body" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = "test-string-payload"
+        with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+          expect(received_req.body).to eq(payload)
+        end
+      end
+    end
+
+    it "sends hash payload as JSON" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = {user: "test", id: 123}
+        with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body).to eq({"user" => "test", "id" => 123})
+        end
+      end
+    end
+
+    it "sends array payload as JSON" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = ["item1", "item2", "item3"]
+        with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body).to eq(["item1", "item2", "item3"])
+        end
+      end
+    end
+
+    it "works with GET method and payload" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = "get-with-payload"
+        with_client(subject.new(server.base_uri, method: "GET", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("GET")
+          expect(received_req.body).to eq(payload)
+        end
+      end
+    end
+  end
+
+  describe "callable payload parameter" do
+    it "invokes lambda payload on each request" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
+        end
+
+        counter = 0
+        callable_payload = -> { counter += 1; "request-#{counter}" }
+
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload, reconnect_time: reconnect_asap)) do |client|
+          # Wait for first request
+          req1 = requests.pop
+          expect(req1.body).to eq("request-1")
+
+          # Wait for reconnect and second request
+          req2 = requests.pop
+          expect(req2.body).to eq("request-2")
+        end
+      end
+    end
+
+    it "invokes proc payload on each request" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: false)
+        end
+
+        counter = 0
+        callable_payload = proc { counter += 1; {request_id: counter, timestamp: Time.now.to_i} }
+
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload, reconnect_time: reconnect_asap)) do |client|
+          # Wait for first request
+          req1 = requests.pop
+          parsed_body1 = JSON.parse(req1.body)
+          expect(parsed_body1["request_id"]).to eq(1)
+
+          # Wait for reconnect and second request
+          req2 = requests.pop
+          parsed_body2 = JSON.parse(req2.body)
+          expect(parsed_body2["request_id"]).to eq(2)
+          expect(parsed_body2["timestamp"]).to be >= parsed_body1["timestamp"]
+        end
+      end
+    end
+
+    it "invokes custom callable object payload" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        class TestPayloadGenerator
+          def initialize
+            @counter = 0
+          end
+
+          def call
+            @counter += 1
+            {generator: "test", count: @counter}
+          end
+        end
+
+        callable_payload = TestPayloadGenerator.new
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body).to eq({"generator" => "test", "count" => 1})
+        end
+      end
+    end
+
+    it "handles callable returning string" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        callable_payload = -> { "dynamic-string-#{rand(1000)}" }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.body).to match(/^dynamic-string-\d+$/)
+        end
+      end
+    end
+
+    it "handles callable returning hash" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        callable_payload = -> { {type: "dynamic", value: rand(1000)} }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body["type"]).to eq("dynamic")
+          expect(parsed_body["value"]).to be_a(Integer)
+        end
+      end
+    end
+
+    it "handles callable returning array" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        callable_payload = -> { ["dynamic", Time.now.to_i] }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body[0]).to eq("dynamic")
+          expect(parsed_body[1]).to be_a(Integer)
+        end
+      end
+    end
+
+    it "handles callable returning other types by converting to string" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        test_object = Object.new
+        def test_object.to_s
+          "custom-object-string"
+        end
+
+        callable_payload = -> { test_object }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.body).to eq("custom-object-string")
+        end
+      end
+    end
+  end
 end
