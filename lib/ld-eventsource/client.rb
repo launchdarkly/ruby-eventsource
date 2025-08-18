@@ -134,6 +134,7 @@ module SSE
       end
 
       @http_client = HTTP::Client.new(http_client_options)
+        .follow
         .timeout({
           read: read_timeout,
           connect: connect_timeout,
