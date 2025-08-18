@@ -22,7 +22,9 @@ get '/' do
     capabilities: [
       'headers',
       'last-event-id',
+      'post',
       'read-timeout',
+      'report',
     ],
   }.to_json
 end
@@ -54,6 +56,8 @@ post '/' do
   entity = nil
   sse = SSE::Client.new(
     streamUrl,
+    method: opts[:method] || "GET",
+    payload: opts[:body] || nil,
     headers: opts[:headers] || {},
     last_event_id: opts[:lastEventId],
     read_timeout: opts[:readTimeoutMs].nil? ? nil : (opts[:readTimeoutMs].to_f / 1000),
