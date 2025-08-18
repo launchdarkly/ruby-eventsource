@@ -42,9 +42,14 @@ module SSE
 
               pos += 1  # skip colon
               pos += 1 if pos < line.length && line[pos] == ' '  # skip optional single space, per SSE spec
-              line = line.slice(pos..-1)
+              value = line.slice(pos..-1)
 
-              item = process_field(name, line)
+              item = process_field(name, value)
+              gen.yield item unless item.nil?
+            else
+              # Handle field with no colon - treat as having empty value
+              # According to SSE spec, a line like "data" should be treated as "data:"
+              item = process_field(line, "")
               gen.yield item unless item.nil?
             end
           end
