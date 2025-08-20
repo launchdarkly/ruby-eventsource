@@ -738,6 +738,155 @@ EOT
     end
   end
 
+  describe "http_client_options precedence" do
+    it "allows socket_factory to be set via individual parameter" do
+      mock_socket_factory = double("MockSocketFactory")
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        # We can't easily test socket creation without actually making a connection,
+        # but we can verify the options contain the socket_class
+        client = nil
+        expect {
+          client = subject.new(server.base_uri, socket_factory: mock_socket_factory)
+        }.not_to raise_error
+
+        # Access the internal HTTP client to verify socket_class was set
+        expect(client.instance_variable_get(:@http_client).default_options.socket_class).to eq(mock_socket_factory)
+
+        client.close
+      end
+    end
+
+    it "allows proxy to be set via individual parameter" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: false)
+        end
+
+        with_server(StubProxyServer.new) do |proxy|
+          event_sink = Queue.new
+          client = subject.new(server.base_uri, proxy: proxy.base_uri) do |c|
+            c.on_event { |event| event_sink << event }
+          end
+
+          with_client(client) do |c|
+            expect(event_sink.pop).to eq(simple_event_1)
+            expect(proxy.request_count).to eq(1)
+          end
+        end
+      end
+    end
+
+    it "allows http_client_options to override socket_factory" do
+      individual_socket_factory = double("IndividualSocketFactory")
+      override_socket_factory = double("OverrideSocketFactory")
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        # http_client_options should take precedence over individual parameter
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            socket_factory: individual_socket_factory,
+            http_client_options: {"socket_class" => override_socket_factory})
+        }.not_to raise_error
+
+        # Verify that the override socket factory was used, not the individual one
+        expect(client.instance_variable_get(:@http_client).default_options.socket_class).to eq(override_socket_factory)
+
+        client.close
+      end
+    end
+
+    it "allows http_client_options to override proxy settings" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: false)
+        end
+
+        with_server(StubProxyServer.new) do |individual_proxy|
+          with_server(StubProxyServer.new) do |override_proxy|
+            event_sink = Queue.new
+            client = subject.new(server.base_uri,
+              proxy: individual_proxy.base_uri,
+              http_client_options: {"proxy" => {
+                :proxy_address => override_proxy.base_uri.host,
+                :proxy_port => override_proxy.base_uri.port
+              }}) do |c|
+              c.on_event { |event| event_sink << event }
+            end
+
+            with_client(client) do |c|
+              expect(event_sink.pop).to eq(simple_event_1)
+              # The override proxy should be used, not the individual one
+              expect(override_proxy.request_count).to eq(1)
+              expect(individual_proxy.request_count).to eq(0)
+            end
+          end
+        end
+      end
+    end
+
+    it "merges http_client_options with base options when both socket_factory and other options are provided" do
+      socket_factory = double("SocketFactory")
+      ssl_options = { verify_mode: 0 }  # OpenSSL::SSL::VERIFY_NONE equivalent
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        # Should include both socket_factory from individual param and ssl from http_client_options
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            socket_factory: socket_factory,
+            http_client_options: {"ssl" => ssl_options})
+        }.not_to raise_error
+
+        # Verify both options are present
+        http_options = client.instance_variable_get(:@http_client).default_options
+        expect(http_options.socket_class).to eq(socket_factory)
+        expect(http_options.ssl).to eq(ssl_options)
+
+        client.close
+      end
+    end
+  end
+
+  describe "http_client_options SSL pass-through" do
+    it "passes SSL verification options through http_client_options" do
+      ssl_options = {
+        verify_mode: 0,  # OpenSSL::SSL::VERIFY_NONE equivalent
+        verify_hostname: false,
+      }
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            http_client_options: {"ssl" => ssl_options})
+        }.not_to raise_error
+
+        # Verify SSL options are passed through
+        expect(client.instance_variable_get(:@http_client).default_options.ssl).to eq(ssl_options)
+
+        client.close
+      end
+    end
+  end
+
   describe "retry parameter" do
     it "defaults to true (retries enabled)" do
       events_body = simple_event_1_text
