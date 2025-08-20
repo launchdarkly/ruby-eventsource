@@ -89,6 +89,8 @@ module SSE
     #   an Array, it will be converted to JSON and sent as the request body. A string will be sent as a non-JSON
     #   request body. If payload responds to #call, it will be invoked on each
     #   request to generate the payload dynamically.
+    # @param retry_enabled [Boolean] (true)  whether to retry connections after failures. If false, the client
+    #   will exit after the first connection failure instead of attempting to reconnect.
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -102,9 +104,11 @@ module SSE
           logger: nil,
           socket_factory: nil,
           method: "GET",
-          payload: nil)
+          payload: nil,
+          retry_enabled: true)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
+      @retry_enabled = retry_enabled
 
       @headers = headers.clone
       @connect_timeout = connect_timeout
@@ -256,6 +260,8 @@ module SSE
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
+
+        return unless @retry_enabled
       end
     end
 

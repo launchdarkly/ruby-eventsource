@@ -737,4 +737,90 @@ EOT
       end
     end
   end
+
+  describe "retry parameter" do
+    it "defaults to true (retries enabled)" do
+      events_body = simple_event_1_text
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          if attempt == 1
+            res.status = 500
+            res.body = "server error"
+            res.keep_alive = false
+          else
+            send_stream_content(res, events_body, keep_open: true)
+          end
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "server error"))
+          expect(attempt).to eq 2  # Should have retried
+        end
+      end
+    end
+
+    it "allows retries when retry_enabled: true" do
+      events_body = simple_event_1_text
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          if attempt == 1
+            res.status = 500
+            res.body = "server error"
+            res.keep_alive = false
+          else
+            send_stream_content(res, events_body, keep_open: true)
+          end
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap, retry_enabled: true) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "server error"))
+          expect(attempt).to eq 2  # Should have retried
+        end
+      end
+    end
+
+    it "disables retries when retry_enabled: false" do
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          res.status = 500
+          res.body = "server error"
+          res.keep_alive = false
+        end
+
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, retry_enabled: false) do |c|
+          c.on_error { |error| error_sink << error }
+        end
+
+        # Give the client some time to attempt connection and fail
+        sleep(0.5)
+        client.close
+
+        expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "server error"))
+        expect(attempt).to eq 1  # Should not have retried
+      end
+    end
+  end
 end
