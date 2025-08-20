@@ -261,7 +261,7 @@ module SSE
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
 
-        return unless @retry_enabled
+        return close unless @retry_enabled
       end
     end
 
