@@ -91,6 +91,9 @@ module SSE
     #   request to generate the payload dynamically.
     # @param retry_enabled [Boolean] (true)  whether to retry connections after failures. If false, the client
     #   will exit after the first connection failure instead of attempting to reconnect.
+    # @param http_client_options [Hash] (nil)  additional options to pass to
+    #   the HTTP client, such as `socket_factory` or `proxy`. These settings will override
+    #   the socket factory and proxy settings.
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -105,7 +108,8 @@ module SSE
           socket_factory: nil,
           method: "GET",
           payload: nil,
-          retry_enabled: true)
+          retry_enabled: true,
+          http_client_options: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
       @retry_enabled = retry_enabled
@@ -116,9 +120,10 @@ module SSE
       @method = method.to_s.upcase
       @payload = payload
       @logger = logger || default_logger
-      http_client_options = {}
+
+      base_http_client_options = {}
       if socket_factory
-        http_client_options["socket_class"] = socket_factory
+        base_http_client_options["socket_class"] = socket_factory
       end
 
       if proxy
@@ -131,13 +136,15 @@ module SSE
       end
 
       if @proxy
-        http_client_options["proxy"] = {
+        base_http_client_options["proxy"] = {
           :proxy_address => @proxy.host,
           :proxy_port => @proxy.port,
         }
       end
 
-      @http_client = HTTP::Client.new(http_client_options)
+      options = http_client_options.is_a?(Hash) ? base_http_client_options.merge(http_client_options) : base_http_client_options
+
+      @http_client = HTTP::Client.new(options)
         .follow
         .timeout({
           read: read_timeout,
