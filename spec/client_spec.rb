@@ -818,7 +818,7 @@ EOT
               proxy: individual_proxy.base_uri,
               http_client_options: {"proxy" => {
                 :proxy_address => override_proxy.base_uri.host,
-                :proxy_port => override_proxy.base_uri.port
+                :proxy_port => override_proxy.base_uri.port,
               }}) do |c|
               c.on_event { |event| event_sink << event }
             end
