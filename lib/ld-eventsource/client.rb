@@ -49,6 +49,9 @@ module SSE
     # The default value for `reconnect_reset_interval` in {#initialize}.
     DEFAULT_RECONNECT_RESET_INTERVAL = 60
 
+    # The default HTTP method for requests.
+    DEFAULT_HTTP_METHOD = "GET"
+
     #
     # Creates a new SSE client.
     #
@@ -106,7 +109,7 @@ module SSE
           proxy: nil,
           logger: nil,
           socket_factory: nil,
-          method: "GET",
+          method: DEFAULT_HTTP_METHOD,
           payload: nil,
           retry_enabled: true,
           http_client_options: nil)
@@ -140,6 +143,8 @@ module SSE
           :proxy_address => @proxy.host,
           :proxy_port => @proxy.port,
         }
+        base_http_client_options["proxy"][:proxy_username] = @proxy.user unless @proxy.user.nil?
+        base_http_client_options["proxy"][:proxy_password] = @proxy.password unless @proxy.password.nil?
       end
 
       options = http_client_options.is_a?(Hash) ? base_http_client_options.merge(http_client_options) : base_http_client_options
