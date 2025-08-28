@@ -1,5 +1,4 @@
 require "ld-eventsource/impl/backoff"
-require "ld-eventsource/impl/basic_event_parser"
 require "ld-eventsource/impl/buffered_line_reader"
 require "ld-eventsource/impl/event_parser"
 require "ld-eventsource/events"
@@ -93,7 +92,6 @@ module SSE
     #   an Array, it will be converted to JSON and sent as the request body. A string will be sent as a non-JSON
     #   request body. If payload responds to #call, it will be invoked on each
     #   request to generate the payload dynamically.
-    # @param parse [Boolean] (true) whether to parse SSE events or pass through raw chunks
     # @param retry_enabled [Boolean] (true)  whether to retry connections after failures. If false, the client
     #   will exit after the first connection failure instead of attempting to reconnect.
     # @param http_client_options [Hash] (nil)  additional options to pass to
@@ -113,7 +111,6 @@ module SSE
           socket_factory: nil,
           method: DEFAULT_HTTP_METHOD,
           payload: nil,
-          parse: true,
           retry_enabled: true,
           http_client_options: nil)
       @uri = URI(uri)
@@ -125,7 +122,6 @@ module SSE
       @read_timeout = read_timeout
       @method = method.to_s.upcase
       @payload = payload
-      @parse = parse
       @logger = logger || default_logger
 
       base_http_client_options = {}
@@ -346,11 +342,7 @@ module SSE
           end
         end
       end
-      if @parse
-        event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks), @last_id)
-      else
-        event_parser = Impl::BasicEventParser.new(chunks)
-      end
+      event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks), @last_id)
 
       event_parser.items.each do |item|
         return if @stopped.value
