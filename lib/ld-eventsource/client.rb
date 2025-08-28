@@ -88,9 +88,17 @@ module SSE
     # @param socket_factory [#open] (nil)  an optional factory object for creating sockets,
     #   if you want to use something other than the default `TCPSocket`; it must implement
     #   `open(uri, timeout)` to return a connected `Socket`
-    # @param http_method [String] (DEFAULT_HTTP_METHOD) the HTTP method to use for requests
-    # @param http_payload [Hash] ({}) JSON payload to send with requests (only used with POST/PUT methods)
+    # @param method [String] ("GET")  the HTTP method to use for requests
+    # @param payload [String, Hash, Array, #call] (nil)  optional request payload. If payload is a Hash or
+    #   an Array, it will be converted to JSON and sent as the request body. A string will be sent as a non-JSON
+    #   request body. If payload responds to #call, it will be invoked on each
+    #   request to generate the payload dynamically.
     # @param parse [Boolean] (true) whether to parse SSE events or pass through raw chunks
+    # @param retry_enabled [Boolean] (true)  whether to retry connections after failures. If false, the client
+    #   will exit after the first connection failure instead of attempting to reconnect.
+    # @param http_client_options [Hash] (nil)  additional options to pass to
+    #   the HTTP client, such as `socket_factory` or `proxy`. These settings will override
+    #   the socket factory and proxy settings.
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -99,26 +107,30 @@ module SSE
           read_timeout: DEFAULT_READ_TIMEOUT,
           reconnect_time: DEFAULT_RECONNECT_TIME,
           reconnect_reset_interval: DEFAULT_RECONNECT_RESET_INTERVAL,
-          http_method: DEFAULT_HTTP_METHOD,
-          http_payload: {},
           last_event_id: nil,
           proxy: nil,
           logger: nil,
           socket_factory: nil,
-          parse: true)
+          method: DEFAULT_HTTP_METHOD,
+          payload: nil,
+          parse: true,
+          retry_enabled: true,
+          http_client_options: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
+      @retry_enabled = retry_enabled
 
       @headers = headers.clone
       @connect_timeout = connect_timeout
       @read_timeout = read_timeout
-      @http_method = http_method
-      @http_payload = http_payload
-      @logger = logger || default_logger
+      @method = method.to_s.upcase
+      @payload = payload
       @parse = parse
-      http_client_options = {}
+      @logger = logger || default_logger
+
+      base_http_client_options = {}
       if socket_factory
-        http_client_options["socket_class"] = socket_factory
+        base_http_client_options["socket_class"] = socket_factory
       end
 
       if proxy
@@ -131,7 +143,7 @@ module SSE
       end
 
       if @proxy
-        http_client_options["proxy"] = {
+        base_http_client_options["proxy"] = {
           :proxy_address => @proxy.host,
           :proxy_port => @proxy.port,
           :proxy_username => @proxy.user,
@@ -139,7 +151,10 @@ module SSE
         }
       end
 
-      @http_client = HTTP::Client.new(http_client_options)
+      options = http_client_options.is_a?(Hash) ? base_http_client_options.merge(http_client_options) : base_http_client_options
+
+      @http_client = HTTP::Client.new(options)
+        .follow
         .timeout({
           read: read_timeout,
           connect: connect_timeout,
@@ -261,6 +276,8 @@ module SSE
         rescue StandardError => e
           log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
+
+        return close unless @retry_enabled
       end
     end
 
@@ -277,9 +294,7 @@ module SSE
         cxn = nil
         begin
           @logger.info { "Connecting to event stream at #{@uri}" }
-          opts = { headers: build_headers }
-          opts[:json] = @http_payload unless @http_payload.empty?
-          cxn = @http_client.request(@http_method, @uri, opts)
+          cxn = @http_client.request(@method, @uri, build_opts)
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
             if content_type && content_type.start_with?("text/event-stream")
@@ -376,6 +391,19 @@ module SSE
       }
       h['Last-Event-Id'] = @last_id if !@last_id.nil? && @last_id != ""
       h.merge(@headers)
+    end
+
+    def build_opts
+      return {headers: build_headers} if @payload.nil?
+
+      # Resolve payload if it's callable
+      resolved_payload = @payload.respond_to?(:call) ? @payload.call : @payload
+
+      if resolved_payload.is_a?(Hash) || resolved_payload.is_a?(Array)
+        {headers: build_headers, json: resolved_payload}
+      else
+        {headers: build_headers, body: resolved_payload.to_s}
+      end
     end
   end
 end

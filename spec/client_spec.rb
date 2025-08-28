@@ -447,4 +447,529 @@ EOT
       end
     end
   end
+
+  describe "HTTP method parameter" do
+    it "defaults to GET method" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("GET")
+        end
+      end
+    end
+
+    it "uses explicit GET method" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri, method: "GET")) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("GET")
+        end
+      end
+    end
+
+    it "uses explicit POST method" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri, method: "POST")) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+        end
+      end
+    end
+
+    it "normalizes method to uppercase" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri, method: "post")) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+        end
+      end
+    end
+  end
+
+  describe "payload parameter" do
+    it "sends string payload as body" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = "test-string-payload"
+        with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+          expect(received_req.body).to eq(payload)
+        end
+      end
+    end
+
+    it "sends hash payload as JSON" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = {user: "test", id: 123}
+        with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body).to eq({"user" => "test", "id" => 123})
+        end
+      end
+    end
+
+    it "sends array payload as JSON" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = ["item1", "item2", "item3"]
+        with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("POST")
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body).to eq(["item1", "item2", "item3"])
+        end
+      end
+    end
+
+    it "works with GET method and payload" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        payload = "get-with-payload"
+        with_client(subject.new(server.base_uri, method: "GET", payload: payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.request_method).to eq("GET")
+          expect(received_req.body).to eq(payload)
+        end
+      end
+    end
+  end
+
+  describe "callable payload parameter" do
+    it "invokes lambda payload on each request" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
+        end
+
+        counter = 0
+        callable_payload = -> { counter += 1; "request-#{counter}" }
+
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload, reconnect_time: reconnect_asap)) do |client|
+          # Wait for first request
+          req1 = requests.pop
+          expect(req1.body).to eq("request-1")
+
+          # Wait for reconnect and second request
+          req2 = requests.pop
+          expect(req2.body).to eq("request-2")
+        end
+      end
+    end
+
+    it "invokes proc payload on each request" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: false)
+        end
+
+        counter = 0
+        callable_payload = proc { counter += 1; {request_id: counter, timestamp: Time.now.to_i} }
+
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload, reconnect_time: reconnect_asap)) do |client|
+          # Wait for first request
+          req1 = requests.pop
+          parsed_body1 = JSON.parse(req1.body)
+          expect(parsed_body1["request_id"]).to eq(1)
+
+          # Wait for reconnect and second request
+          req2 = requests.pop
+          parsed_body2 = JSON.parse(req2.body)
+          expect(parsed_body2["request_id"]).to eq(2)
+          expect(parsed_body2["timestamp"]).to be >= parsed_body1["timestamp"]
+        end
+      end
+    end
+
+    it "invokes custom callable object payload" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        class TestPayloadGenerator
+          def initialize
+            @counter = 0
+          end
+
+          def call
+            @counter += 1
+            {generator: "test", count: @counter}
+          end
+        end
+
+        callable_payload = TestPayloadGenerator.new
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body).to eq({"generator" => "test", "count" => 1})
+        end
+      end
+    end
+
+    it "handles callable returning string" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        callable_payload = -> { "dynamic-string-#{rand(1000)}" }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.body).to match(/^dynamic-string-\d+$/)
+        end
+      end
+    end
+
+    it "handles callable returning hash" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        callable_payload = -> { {type: "dynamic", value: rand(1000)} }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body["type"]).to eq("dynamic")
+          expect(parsed_body["value"]).to be_a(Integer)
+        end
+      end
+    end
+
+    it "handles callable returning array" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        callable_payload = -> { ["dynamic", Time.now.to_i] }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.header["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req.body)
+          expect(parsed_body[0]).to eq("dynamic")
+          expect(parsed_body[1]).to be_a(Integer)
+        end
+      end
+    end
+
+    it "handles callable returning other types by converting to string" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          requests << req
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        test_object = Object.new
+        def test_object.to_s
+          "custom-object-string"
+        end
+
+        callable_payload = -> { test_object }
+        with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
+          received_req = requests.pop
+          expect(received_req.body).to eq("custom-object-string")
+        end
+      end
+    end
+  end
+
+  describe "http_client_options precedence" do
+    it "allows socket_factory to be set via individual parameter" do
+      mock_socket_factory = double("MockSocketFactory")
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        # We can't easily test socket creation without actually making a connection,
+        # but we can verify the options contain the socket_class
+        client = nil
+        expect {
+          client = subject.new(server.base_uri, socket_factory: mock_socket_factory)
+        }.not_to raise_error
+
+        # Access the internal HTTP client to verify socket_class was set
+        expect(client.instance_variable_get(:@http_client).default_options.socket_class).to eq(mock_socket_factory)
+
+        client.close
+      end
+    end
+
+    it "allows proxy to be set via individual parameter" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: false)
+        end
+
+        with_server(StubProxyServer.new) do |proxy|
+          event_sink = Queue.new
+          client = subject.new(server.base_uri, proxy: proxy.base_uri) do |c|
+            c.on_event { |event| event_sink << event }
+          end
+
+          with_client(client) do |c|
+            expect(event_sink.pop).to eq(simple_event_1)
+            expect(proxy.request_count).to eq(1)
+          end
+        end
+      end
+    end
+
+    it "allows http_client_options to override socket_factory" do
+      individual_socket_factory = double("IndividualSocketFactory")
+      override_socket_factory = double("OverrideSocketFactory")
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        # http_client_options should take precedence over individual parameter
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            socket_factory: individual_socket_factory,
+            http_client_options: {"socket_class" => override_socket_factory})
+        }.not_to raise_error
+
+        # Verify that the override socket factory was used, not the individual one
+        expect(client.instance_variable_get(:@http_client).default_options.socket_class).to eq(override_socket_factory)
+
+        client.close
+      end
+    end
+
+    it "allows http_client_options to override proxy settings" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: false)
+        end
+
+        with_server(StubProxyServer.new) do |individual_proxy|
+          with_server(StubProxyServer.new) do |override_proxy|
+            event_sink = Queue.new
+            client = subject.new(server.base_uri,
+              proxy: individual_proxy.base_uri,
+              http_client_options: {"proxy" => {
+                :proxy_address => override_proxy.base_uri.host,
+                :proxy_port => override_proxy.base_uri.port,
+              }}) do |c|
+              c.on_event { |event| event_sink << event }
+            end
+
+            with_client(client) do |c|
+              expect(event_sink.pop).to eq(simple_event_1)
+              # The override proxy should be used, not the individual one
+              expect(override_proxy.request_count).to eq(1)
+              expect(individual_proxy.request_count).to eq(0)
+            end
+          end
+        end
+      end
+    end
+
+    it "merges http_client_options with base options when both socket_factory and other options are provided" do
+      socket_factory = double("SocketFactory")
+      ssl_options = { verify_mode: 0 }  # OpenSSL::SSL::VERIFY_NONE equivalent
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        # Should include both socket_factory from individual param and ssl from http_client_options
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            socket_factory: socket_factory,
+            http_client_options: {"ssl" => ssl_options})
+        }.not_to raise_error
+
+        # Verify both options are present
+        http_options = client.instance_variable_get(:@http_client).default_options
+        expect(http_options.socket_class).to eq(socket_factory)
+        expect(http_options.ssl).to eq(ssl_options)
+
+        client.close
+      end
+    end
+  end
+
+  describe "http_client_options SSL pass-through" do
+    it "passes SSL verification options through http_client_options" do
+      ssl_options = {
+        verify_mode: 0,  # OpenSSL::SSL::VERIFY_NONE equivalent
+        verify_hostname: false,
+      }
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            http_client_options: {"ssl" => ssl_options})
+        }.not_to raise_error
+
+        # Verify SSL options are passed through
+        expect(client.instance_variable_get(:@http_client).default_options.ssl).to eq(ssl_options)
+
+        client.close
+      end
+    end
+  end
+
+  describe "retry parameter" do
+    it "defaults to true (retries enabled)" do
+      events_body = simple_event_1_text
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          if attempt == 1
+            res.status = 500
+            res.body = "server error"
+            res.keep_alive = false
+          else
+            send_stream_content(res, events_body, keep_open: true)
+          end
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "server error"))
+          expect(attempt).to eq 2  # Should have retried
+        end
+      end
+    end
+
+    it "allows retries when retry_enabled: true" do
+      events_body = simple_event_1_text
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          if attempt == 1
+            res.status = 500
+            res.body = "server error"
+            res.keep_alive = false
+          else
+            send_stream_content(res, events_body, keep_open: true)
+          end
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap, retry_enabled: true) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "server error"))
+          expect(attempt).to eq 2  # Should have retried
+        end
+      end
+    end
+
+    it "disables retries when retry_enabled: false" do
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          res.status = 500
+          res.body = "server error"
+          res.keep_alive = false
+        end
+
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, retry_enabled: false) do |c|
+          c.on_error { |error| error_sink << error }
+        end
+
+        # Give the client some time to attempt connection and fail
+        sleep(0.5)
+        client.close
+
+        expect(error_sink.pop).to eq(SSE::Errors::HTTPStatusError.new(500, "server error"))
+        expect(attempt).to eq 1  # Should not have retried
+      end
+    end
+  end
 end
