@@ -7,7 +7,6 @@ require "ld-eventsource/errors"
 
 require "concurrent/atomics"
 require "logger"
-require "openssl"
 require "thread"
 require "uri"
 require "http"
@@ -92,7 +91,6 @@ module SSE
     # @param http_method [String] (DEFAULT_HTTP_METHOD) the HTTP method to use for requests
     # @param http_payload [Hash] ({}) JSON payload to send with requests (only used with POST/PUT methods)
     # @param parse [Boolean] (true) whether to parse SSE events or pass through raw chunks
-    # @param verify_ssl [Boolean] (true) whether to verify SSL certificates; set to false for development/testing
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -107,8 +105,7 @@ module SSE
           proxy: nil,
           logger: nil,
           socket_factory: nil,
-          parse: true,
-          verify_ssl: true)
+          parse: true)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
 
@@ -120,9 +117,6 @@ module SSE
       @logger = logger || default_logger
       @parse = parse
       http_client_options = {}
-      unless verify_ssl
-        http_client_options[:ssl] = { verify_mode: OpenSSL::SSL::VERIFY_NONE }
-      end
       if socket_factory
         http_client_options["socket_class"] = socket_factory
       end
