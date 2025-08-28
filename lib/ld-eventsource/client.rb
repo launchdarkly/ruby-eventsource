@@ -143,8 +143,8 @@ module SSE
           :proxy_address => @proxy.host,
           :proxy_port => @proxy.port,
         }
-        base_http_client_options["proxy"][:proxy_username] = @proxy.user unless @proxy.user.empty?
-        base_http_client_options["proxy"][:proxy_password] = @proxy.password unless @proxy.password.empty?
+        base_http_client_options["proxy"][:proxy_username] = @proxy.user unless @proxy.user.nil?
+        base_http_client_options["proxy"][:proxy_password] = @proxy.password unless @proxy.password.nil?
       end
 
       options = http_client_options.is_a?(Hash) ? base_http_client_options.merge(http_client_options) : base_http_client_options
