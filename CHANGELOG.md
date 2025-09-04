@@ -2,6 +2,22 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.3.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.6...2.3.0) (2025-08-28)
+
+
+### Features
+
+* Add ability to control SSE request method and body ([#51](https://github.com/launchdarkly/ruby-eventsource/issues/51)) ([7c65c4b](https://github.com/launchdarkly/ruby-eventsource/commit/7c65c4b41af2c281ea207f5863cf0d8f690ce354))
+* Add ability to disable retries ([#67](https://github.com/launchdarkly/ruby-eventsource/issues/67)) ([f272b90](https://github.com/launchdarkly/ruby-eventsource/commit/f272b9026b1b199fcc2e7b497be15e211f5d6bf5))
+* Allow providing HTTP client option settings ([#68](https://github.com/launchdarkly/ruby-eventsource/issues/68)) ([1d9b31c](https://github.com/launchdarkly/ruby-eventsource/commit/1d9b31c86792166061768d97dedfb7cfa31fabc5))
+
+
+### Bug Fixes
+
+* Handle redirect on 301 and 307 ([7d342e7](https://github.com/launchdarkly/ruby-eventsource/commit/7d342e7cad719d8c0c5e8e55bbda18792c58e1b4))
+* Pass through proxy user and password if present ([#69](https://github.com/launchdarkly/ruby-eventsource/issues/69)) ([0bb36f3](https://github.com/launchdarkly/ruby-eventsource/commit/0bb36f37fca76ed65748b594855be7d2569a6820))
+* Support field without colon in event ([7d342e7](https://github.com/launchdarkly/ruby-eventsource/commit/7d342e7cad719d8c0c5e8e55bbda18792c58e1b4))
+
 ## [2.2.6](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.5...2.2.6) (2025-07-15)
 
 
