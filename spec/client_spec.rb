@@ -972,4 +972,24 @@ EOT
       end
     end
   end
+
+  describe "async parameter" do
+    let(:uri) { "http://example.com/stream" }
+
+    it "creates worker thread when async is true" do
+      allow_any_instance_of(SSE::Client).to receive(:run_stream)
+      expect(Thread).to receive(:new).and_call_original
+
+      client = subject.new(uri, async: true)
+      client.close
+    end
+
+    it "does not create worker thread when async is false" do
+      allow_any_instance_of(SSE::Client).to receive(:run_stream)
+      expect(Thread).not_to receive(:new)
+
+      client = subject.new(uri, async: false)
+      client.close
+    end
+  end
 end
