@@ -52,6 +52,8 @@ module SSE
     # The default HTTP method for requests.
     DEFAULT_HTTP_METHOD = "GET"
 
+    THREAD_NAME = 'LD/SSEClient'
+
     #
     # Creates a new SSE client.
     #
@@ -97,6 +99,9 @@ module SSE
     # @param http_client_options [Hash] (nil)  additional options to pass to
     #   the HTTP client, such as `socket_factory` or `proxy`. These settings will override
     #   the socket factory and proxy settings.
+    # @param async [Boolean] (true)  whether to run the stream in a separate thread
+    #   if true, the stream will be run in a separate thread
+    #   if false, the stream will be run in the current thread
     # @yieldparam [Client] client  the new client instance, before opening the connection
     #
     def initialize(uri,
@@ -112,7 +117,8 @@ module SSE
           method: DEFAULT_HTTP_METHOD,
           payload: nil,
           retry_enabled: true,
-          http_client_options: nil)
+          http_client_options: nil,
+          async: true)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
       @retry_enabled = retry_enabled
@@ -167,7 +173,11 @@ module SSE
 
       yield self if block_given?
 
-      Thread.new { run_stream }.name = 'LD/SSEClient'
+      if async
+        Thread.new { run_stream }.name = THREAD_NAME
+      else
+        run_stream
+      end
     end
 
     #
