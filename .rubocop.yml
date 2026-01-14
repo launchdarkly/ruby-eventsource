@@ -1,4 +1,4 @@
-require:
+plugins:
   - rubocop-performance
 
 AllCops:
@@ -289,7 +289,7 @@ Style/PerlBackrefs:
   StyleGuide: "https://github.com/bbatsov/ruby-style-guide#no-perl-regexp-last-matchers"
   Enabled: false
 
-Naming/PredicateName:
+Naming/PredicatePrefix:
   Description: "Check the names of predicate methods."
   StyleGuide: "https://github.com/bbatsov/ruby-style-guide#bool-methods-qmark"
   ForbiddenPrefixes:
