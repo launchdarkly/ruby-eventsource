@@ -1021,7 +1021,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1031,8 +1032,8 @@ EOT
           end
         end) do |client|
           received_req = requests.pop
-          expect(received_req.query_string).to include("basis=p%3AABC%3A123")
-          expect(received_req.query_string).to include("filter=test")
+          expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
+          expect(received_req[:query_string]).to include("filter=test")
         end
       end
     end
@@ -1042,7 +1043,8 @@ EOT
         requests = Queue.new
         attempt = 0
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           attempt += 1
           if attempt == 1
             send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
@@ -1059,10 +1061,10 @@ EOT
           end
         end) do |client|
           req1 = requests.pop
-          expect(req1.query_string).to eq("request_id=1")
+          expect(req1[:query_string]).to eq("request_id=1")
 
           req2 = requests.pop
-          expect(req2.query_string).to eq("request_id=2")
+          expect(req2[:query_string]).to eq("request_id=2")
           expect(attempt).to eq(2)
         end
       end
@@ -1072,7 +1074,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1083,8 +1086,8 @@ EOT
           end
         end) do |client|
           received_req = requests.pop
-          expect(received_req.query_string).to include("static=value")
-          expect(received_req.query_string).to include("dynamic=param")
+          expect(received_req[:query_string]).to include("static=value")
+          expect(received_req[:query_string]).to include("dynamic=param")
         end
       end
     end
@@ -1093,7 +1096,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1105,7 +1109,7 @@ EOT
         end) do |client|
           received_req = requests.pop
           # Dynamic params should override static ones
-          expect(received_req.query_string).to eq("key=overridden")
+          expect(received_req[:query_string]).to eq("key=overridden")
         end
       end
     end
@@ -1114,13 +1118,14 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         with_client(subject.new(server.base_uri)) do |client|
           received_req = requests.pop
-          expect(received_req.query_string).to be_nil
+          expect(received_req[:query_string]).to be_nil
         end
       end
     end
@@ -1129,14 +1134,15 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         base_uri_with_params = "#{server.base_uri}?existing=param"
         with_client(subject.new(base_uri_with_params)) do |client|
           received_req = requests.pop
-          expect(received_req.query_string).to eq("existing=param")
+          expect(received_req[:query_string]).to eq("existing=param")
         end
       end
     end
@@ -1145,7 +1151,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1157,7 +1164,7 @@ EOT
         end) do |client|
           received_req = requests.pop
           # Empty hash should preserve existing params (consistent with Python behavior)
-          expect(received_req.query_string).to eq("existing=param")
+          expect(received_req[:query_string]).to eq("existing=param")
         end
       end
     end
@@ -1166,7 +1173,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1177,7 +1185,7 @@ EOT
         end) do |client|
           received_req = requests.pop
           # Should proceed with base URI (no query params)
-          expect(received_req.query_string).to be_nil
+          expect(received_req[:query_string]).to be_nil
         end
       end
     end
@@ -1186,7 +1194,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1198,7 +1207,7 @@ EOT
         end) do |client|
           received_req = requests.pop
           # Should fall back to base URI params
-          expect(received_req.query_string).to eq("fallback=value")
+          expect(received_req[:query_string]).to eq("fallback=value")
         end
       end
     end
@@ -1207,7 +1216,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1219,7 +1229,7 @@ EOT
         end) do |client|
           received_req = requests.pop
           # Should fall back to base URI params
-          expect(received_req.query_string).to eq("fallback=value")
+          expect(received_req[:query_string]).to eq("fallback=value")
         end
       end
     end
@@ -1229,7 +1239,8 @@ EOT
         requests = Queue.new
         attempt = 0
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           attempt += 1
           if attempt <= 2
             res.status = 500
@@ -1248,13 +1259,13 @@ EOT
           end
         end) do |client|
           req1 = requests.pop
-          expect(req1.query_string).to eq("connection=1")
+          expect(req1[:query_string]).to eq("connection=1")
 
           req2 = requests.pop
-          expect(req2.query_string).to eq("connection=2")
+          expect(req2[:query_string]).to eq("connection=2")
 
           req3 = requests.pop
-          expect(req3.query_string).to eq("connection=3")
+          expect(req3[:query_string]).to eq("connection=3")
           expect(attempt).to eq(3)
         end
       end
@@ -1264,7 +1275,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1274,8 +1286,8 @@ EOT
           end
         end) do |client|
           received_req = requests.pop
-          expect(received_req.query_string).to include("basis=p%3AABC%3A123")
-          expect(received_req.query_string).to include("filter=test+value+with+spaces")
+          expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
+          expect(received_req[:query_string]).to include("filter=test+value+with+spaces")
         end
       end
     end
@@ -1284,7 +1296,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { query_string: req.query_string }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -1298,7 +1311,7 @@ EOT
           end
         end) do |client|
           received_req = requests.pop
-          query_string = received_req.query_string
+          query_string = received_req[:query_string]
           expect(query_string).to include("param1=value1")
           expect(query_string).to include("param2=value2")
           expect(query_string).to include("param3=value3")
