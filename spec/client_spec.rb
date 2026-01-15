@@ -54,7 +54,8 @@ EOT
     with_server do |server|
       requests = Queue.new
       server.setup_response("/") do |req,res|
-        requests << req
+        request_data = { headers: req.header.dup }
+        requests << request_data
         send_stream_content(res, "", keep_open: true)
       end
 
@@ -62,7 +63,7 @@ EOT
 
       with_client(subject.new(server.base_uri, headers: headers)) do |client|
         received_req = requests.pop
-        expect(received_req.header).to eq({
+        expect(received_req[:headers]).to eq({
           "accept" => ["text/event-stream"],
           "cache-control" => ["no-cache"],
           "host" => ["127.0.0.1:" + server.port.to_s],
@@ -79,7 +80,8 @@ EOT
     with_server do |server|
       requests = Queue.new
       server.setup_response("/") do |req,res|
-        requests << req
+        request_data = { headers: req.header.dup }
+        requests << request_data
         send_stream_content(res, "", keep_open: true)
       end
 
@@ -87,7 +89,7 @@ EOT
 
       with_client(subject.new(server.base_uri, headers: headers, last_event_id: id)) do |client|
         received_req = requests.pop
-        expect(received_req.header).to eq({
+        expect(received_req[:headers]).to eq({
           "accept" => ["text/event-stream"],
           "cache-control" => ["no-cache"],
           "host" => ["127.0.0.1:" + server.port.to_s],
@@ -254,7 +256,9 @@ EOT
       requests = Queue.new
       attempt = 0
       server.setup_response("/") do |req,res|
-        requests << req
+        # Capture request data before closing the stream
+        request_data = { headers: req.header.dup }
+        requests << request_data
         attempt += 1
         if attempt == 1
           send_stream_content(res, "data: foo\nid: a\n\n", keep_open: false)
@@ -269,9 +273,9 @@ EOT
       end
 
       with_client(client) do |c|
-        req1 = requests.pop
+        _req1 = requests.pop
         req2 = requests.pop
-        expect(req2.header["last-event-id"]).to eq([ "a" ])
+        expect(req2[:headers]["last-event-id"]).to eq([ "a" ])
       end
     end
   end
@@ -453,13 +457,14 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         with_client(subject.new(server.base_uri)) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("GET")
+          expect(received_req[:method]).to eq("GET")
         end
       end
     end
@@ -468,13 +473,14 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         with_client(subject.new(server.base_uri, method: "GET")) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("GET")
+          expect(received_req[:method]).to eq("GET")
         end
       end
     end
@@ -483,13 +489,14 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         with_client(subject.new(server.base_uri, method: "POST")) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("POST")
+          expect(received_req[:method]).to eq("POST")
         end
       end
     end
@@ -498,13 +505,14 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         with_client(subject.new(server.base_uri, method: "post")) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("POST")
+          expect(received_req[:method]).to eq("POST")
         end
       end
     end
@@ -515,15 +523,16 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method, body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         payload = "test-string-payload"
         with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("POST")
-          expect(received_req.body).to eq(payload)
+          expect(received_req[:method]).to eq("POST")
+          expect(received_req[:body]).to eq(payload)
         end
       end
     end
@@ -532,16 +541,17 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method, headers: req.header.dup, body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         payload = {user: "test", id: 123}
         with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("POST")
-          expect(received_req.header["content-type"].first).to include("application/json")
-          parsed_body = JSON.parse(received_req.body)
+          expect(received_req[:method]).to eq("POST")
+          expect(received_req[:headers]["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req[:body])
           expect(parsed_body).to eq({"user" => "test", "id" => 123})
         end
       end
@@ -551,16 +561,17 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method, headers: req.header.dup, body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         payload = ["item1", "item2", "item3"]
         with_client(subject.new(server.base_uri, method: "POST", payload: payload)) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("POST")
-          expect(received_req.header["content-type"].first).to include("application/json")
-          parsed_body = JSON.parse(received_req.body)
+          expect(received_req[:method]).to eq("POST")
+          expect(received_req[:headers]["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req[:body])
           expect(parsed_body).to eq(["item1", "item2", "item3"])
         end
       end
@@ -570,15 +581,16 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { method: req.request_method, body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         payload = "get-with-payload"
         with_client(subject.new(server.base_uri, method: "GET", payload: payload)) do |client|
           received_req = requests.pop
-          expect(received_req.request_method).to eq("GET")
-          expect(received_req.body).to eq(payload)
+          expect(received_req[:method]).to eq("GET")
+          expect(received_req[:body]).to eq(payload)
         end
       end
     end
@@ -589,7 +601,9 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          # Capture request body before closing the stream
+          request_data = { body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
         end
 
@@ -599,11 +613,11 @@ EOT
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload, reconnect_time: reconnect_asap)) do |client|
           # Wait for first request
           req1 = requests.pop
-          expect(req1.body).to eq("request-1")
+          expect(req1[:body]).to eq("request-1")
 
           # Wait for reconnect and second request
           req2 = requests.pop
-          expect(req2.body).to eq("request-2")
+          expect(req2[:body]).to eq("request-2")
         end
       end
     end
@@ -612,7 +626,9 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          # Capture request body before closing the stream
+          request_data = { body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: false)
         end
 
@@ -622,12 +638,12 @@ EOT
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload, reconnect_time: reconnect_asap)) do |client|
           # Wait for first request
           req1 = requests.pop
-          parsed_body1 = JSON.parse(req1.body)
+          parsed_body1 = JSON.parse(req1[:body])
           expect(parsed_body1["request_id"]).to eq(1)
 
           # Wait for reconnect and second request
           req2 = requests.pop
-          parsed_body2 = JSON.parse(req2.body)
+          parsed_body2 = JSON.parse(req2[:body])
           expect(parsed_body2["request_id"]).to eq(2)
           expect(parsed_body2["timestamp"]).to be >= parsed_body1["timestamp"]
         end
@@ -638,7 +654,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -656,7 +673,7 @@ EOT
         callable_payload = TestPayloadGenerator.new
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
           received_req = requests.pop
-          parsed_body = JSON.parse(received_req.body)
+          parsed_body = JSON.parse(received_req[:body])
           expect(parsed_body).to eq({"generator" => "test", "count" => 1})
         end
       end
@@ -666,14 +683,15 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         callable_payload = -> { "dynamic-string-#{rand(1000)}" }
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
           received_req = requests.pop
-          expect(received_req.body).to match(/^dynamic-string-\d+$/)
+          expect(received_req[:body]).to match(/^dynamic-string-\d+$/)
         end
       end
     end
@@ -682,15 +700,16 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { headers: req.header.dup, body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         callable_payload = -> { {type: "dynamic", value: rand(1000)} }
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
           received_req = requests.pop
-          expect(received_req.header["content-type"].first).to include("application/json")
-          parsed_body = JSON.parse(received_req.body)
+          expect(received_req[:headers]["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req[:body])
           expect(parsed_body["type"]).to eq("dynamic")
           expect(parsed_body["value"]).to be_a(Integer)
         end
@@ -701,15 +720,16 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { headers: req.header.dup, body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
         callable_payload = -> { ["dynamic", Time.now.to_i] }
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
           received_req = requests.pop
-          expect(received_req.header["content-type"].first).to include("application/json")
-          parsed_body = JSON.parse(received_req.body)
+          expect(received_req[:headers]["content-type"].first).to include("application/json")
+          parsed_body = JSON.parse(received_req[:body])
           expect(parsed_body[0]).to eq("dynamic")
           expect(parsed_body[1]).to be_a(Integer)
         end
@@ -720,7 +740,8 @@ EOT
       with_server do |server|
         requests = Queue.new
         server.setup_response("/") do |req,res|
-          requests << req
+          request_data = { body: req.body }
+          requests << request_data
           send_stream_content(res, "", keep_open: true)
         end
 
@@ -732,7 +753,7 @@ EOT
         callable_payload = -> { test_object }
         with_client(subject.new(server.base_uri, method: "POST", payload: callable_payload)) do |client|
           received_req = requests.pop
-          expect(received_req.body).to eq("custom-object-string")
+          expect(received_req[:body]).to eq("custom-object-string")
         end
       end
     end
