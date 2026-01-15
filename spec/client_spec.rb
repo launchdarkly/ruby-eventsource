@@ -1282,8 +1282,6 @@ EOT
           end
         end
 
-        # Small delay to ensure query_params callback is registered before first request
-
         with_client(client) do |_|
           received_req = requests.pop
           expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
