@@ -993,4 +993,308 @@ EOT
       end
     end
   end
+
+  describe "dynamic query parameters" do
+    it "sends query parameters from callback on initial connection" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri) do |c|
+          c.query_params do
+            {"basis" => "p:ABC:123", "filter" => "test"}
+          end
+        end) do |client|
+          received_req = requests.pop
+          expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
+          expect(received_req[:query_string]).to include("filter=test")
+        end
+      end
+    end
+
+    it "updates query parameters on reconnection" do
+      with_server do |server|
+        requests = Queue.new
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          attempt += 1
+          if attempt == 1
+            send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
+          else
+            send_stream_content(res, "", keep_open: true)
+          end
+        end
+
+        counter = 0
+        with_client(subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.query_params do
+            counter += 1
+            {"request_id" => counter.to_s}
+          end
+        end) do |client|
+          req1 = requests.pop
+          expect(req1[:query_string]).to eq("request_id=1")
+
+          req2 = requests.pop
+          expect(req2[:query_string]).to eq("request_id=2")
+          expect(attempt).to eq(2)
+        end
+      end
+    end
+
+    it "merges dynamic params with existing query params in URI" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        base_uri_with_params = "#{server.base_uri}?static=value"
+        with_client(subject.new(base_uri_with_params) do |c|
+          c.query_params do
+            {"dynamic" => "param"}
+          end
+        end) do |client|
+          received_req = requests.pop
+          expect(received_req[:query_string]).to include("static=value")
+          expect(received_req[:query_string]).to include("dynamic=param")
+        end
+      end
+    end
+
+    it "allows dynamic params to override existing query params" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        base_uri_with_params = "#{server.base_uri}?key=original"
+        with_client(subject.new(base_uri_with_params) do |c|
+          c.query_params do
+            {"key" => "overridden"}
+          end
+        end) do |client|
+          received_req = requests.pop
+          # Dynamic params should override static ones
+          expect(received_req[:query_string]).to eq("key=overridden")
+        end
+      end
+    end
+
+    it "works without query_params callback (backward compatibility)" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri)) do |client|
+          received_req = requests.pop
+          expect(received_req[:query_string]).to be_nil
+        end
+      end
+    end
+
+    it "preserves existing query params when no callback is set" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        base_uri_with_params = "#{server.base_uri}?existing=param"
+        with_client(subject.new(base_uri_with_params)) do |client|
+          received_req = requests.pop
+          expect(received_req[:query_string]).to eq("existing=param")
+        end
+      end
+    end
+
+    it "handles callback returning empty hash" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        base_uri_with_params = "#{server.base_uri}?existing=param"
+        with_client(subject.new(base_uri_with_params) do |c|
+          c.query_params do
+            {}
+          end
+        end) do |client|
+          received_req = requests.pop
+          # Empty hash should preserve existing params (consistent with Python behavior)
+          expect(received_req[:query_string]).to eq("existing=param")
+        end
+      end
+    end
+
+    it "handles callback returning nil gracefully" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri) do |c|
+          c.query_params do
+            nil
+          end
+        end) do |client|
+          received_req = requests.pop
+          # Should proceed with base URI (no query params)
+          expect(received_req[:query_string]).to be_nil
+        end
+      end
+    end
+
+    it "handles callback raising exception gracefully" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        base_uri_with_params = "#{server.base_uri}?fallback=value"
+        with_client(subject.new(base_uri_with_params) do |c|
+          c.query_params do
+            raise "Test exception"
+          end
+        end) do |client|
+          received_req = requests.pop
+          # Should fall back to base URI params
+          expect(received_req[:query_string]).to eq("fallback=value")
+        end
+      end
+    end
+
+    it "handles callback returning non-Hash value gracefully" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        base_uri_with_params = "#{server.base_uri}?fallback=value"
+        with_client(subject.new(base_uri_with_params) do |c|
+          c.query_params do
+            "not a hash"
+          end
+        end) do |client|
+          received_req = requests.pop
+          # Should fall back to base URI params
+          expect(received_req[:query_string]).to eq("fallback=value")
+        end
+      end
+    end
+
+    it "updates query parameters on each reconnection attempt" do
+      with_server do |server|
+        requests = Queue.new
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          attempt += 1
+          if attempt <= 2
+            res.status = 500
+            res.body = "error"
+            res.keep_alive = false
+          else
+            send_stream_content(res, "", keep_open: true)
+          end
+        end
+
+        connection_count = 0
+        with_client(subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.query_params do
+            connection_count += 1
+            {"connection" => connection_count.to_s}
+          end
+        end) do |client|
+          req1 = requests.pop
+          expect(req1[:query_string]).to eq("connection=1")
+
+          req2 = requests.pop
+          expect(req2[:query_string]).to eq("connection=2")
+
+          req3 = requests.pop
+          expect(req3[:query_string]).to eq("connection=3")
+          expect(attempt).to eq(3)
+        end
+      end
+    end
+
+    it "handles URL-encoded query parameter values" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri) do |c|
+          c.query_params do
+            {"basis" => "p:ABC:123", "filter" => "test value with spaces"}
+          end
+        end) do |client|
+          received_req = requests.pop
+          expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
+          expect(received_req[:query_string]).to include("filter=test+value+with+spaces")
+        end
+      end
+    end
+
+    it "works with multiple query parameters" do
+      with_server do |server|
+        requests = Queue.new
+        server.setup_response("/") do |req,res|
+          request_data = { query_string: req.query_string }
+          requests << request_data
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        with_client(subject.new(server.base_uri) do |c|
+          c.query_params do
+            {
+              "param1" => "value1",
+              "param2" => "value2",
+              "param3" => "value3",
+            }
+          end
+        end) do |client|
+          received_req = requests.pop
+          query_string = received_req[:query_string]
+          expect(query_string).to include("param1=value1")
+          expect(query_string).to include("param2=value2")
+          expect(query_string).to include("param3=value3")
+        end
+      end
+    end
+  end
 end
