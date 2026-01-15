@@ -1004,11 +1004,13 @@ EOT
           send_stream_content(res, "", keep_open: true)
         end
 
-        with_client(subject.new(server.base_uri) do |c|
+        client = subject.new(server.base_uri) do |c|
           c.query_params do
             {"basis" => "p:ABC:123", "filter" => "test"}
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
           expect(received_req[:query_string]).to include("filter=test")
@@ -1032,12 +1034,14 @@ EOT
         end
 
         counter = 0
-        with_client(subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
           c.query_params do
             counter += 1
             {"request_id" => counter.to_s}
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           req1 = requests.pop
           expect(req1[:query_string]).to eq("request_id=1")
 
@@ -1058,11 +1062,13 @@ EOT
         end
 
         base_uri_with_params = "#{server.base_uri}?static=value"
-        with_client(subject.new(base_uri_with_params) do |c|
+        client = subject.new(base_uri_with_params) do |c|
           c.query_params do
             {"dynamic" => "param"}
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           expect(received_req[:query_string]).to include("static=value")
           expect(received_req[:query_string]).to include("dynamic=param")
@@ -1080,11 +1086,13 @@ EOT
         end
 
         base_uri_with_params = "#{server.base_uri}?key=original"
-        with_client(subject.new(base_uri_with_params) do |c|
+        client = subject.new(base_uri_with_params) do |c|
           c.query_params do
             {"key" => "overridden"}
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           # Dynamic params should override static ones
           expect(received_req[:query_string]).to eq("key=overridden")
@@ -1135,11 +1143,13 @@ EOT
         end
 
         base_uri_with_params = "#{server.base_uri}?existing=param"
-        with_client(subject.new(base_uri_with_params) do |c|
+        client = subject.new(base_uri_with_params) do |c|
           c.query_params do
             {}
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           # Empty hash should preserve existing params (consistent with Python behavior)
           expect(received_req[:query_string]).to eq("existing=param")
@@ -1156,11 +1166,13 @@ EOT
           send_stream_content(res, "", keep_open: true)
         end
 
-        with_client(subject.new(server.base_uri) do |c|
+        client = subject.new(server.base_uri) do |c|
           c.query_params do
             nil
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           # Should proceed with base URI (no query params)
           expect(received_req[:query_string]).to be_nil
@@ -1178,11 +1190,13 @@ EOT
         end
 
         base_uri_with_params = "#{server.base_uri}?fallback=value"
-        with_client(subject.new(base_uri_with_params) do |c|
+        client = subject.new(base_uri_with_params) do |c|
           c.query_params do
             raise "Test exception"
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           # Should fall back to base URI params
           expect(received_req[:query_string]).to eq("fallback=value")
@@ -1200,11 +1214,13 @@ EOT
         end
 
         base_uri_with_params = "#{server.base_uri}?fallback=value"
-        with_client(subject.new(base_uri_with_params) do |c|
+        client = subject.new(base_uri_with_params) do |c|
           c.query_params do
             "not a hash"
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           # Should fall back to base URI params
           expect(received_req[:query_string]).to eq("fallback=value")
@@ -1230,12 +1246,14 @@ EOT
         end
 
         connection_count = 0
-        with_client(subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
           c.query_params do
             connection_count += 1
             {"connection" => connection_count.to_s}
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           req1 = requests.pop
           expect(req1[:query_string]).to eq("connection=1")
 
@@ -1258,11 +1276,15 @@ EOT
           send_stream_content(res, "", keep_open: true)
         end
 
-        with_client(subject.new(server.base_uri) do |c|
+        client = subject.new(server.base_uri) do |c|
           c.query_params do
             {"basis" => "p:ABC:123", "filter" => "test value with spaces"}
           end
-        end) do |client|
+        end
+
+        # Small delay to ensure query_params callback is registered before first request
+
+        with_client(client) do |_|
           received_req = requests.pop
           expect(received_req[:query_string]).to include("basis=p%3AABC%3A123")
           expect(received_req[:query_string]).to include("filter=test+value+with+spaces")
@@ -1279,7 +1301,7 @@ EOT
           send_stream_content(res, "", keep_open: true)
         end
 
-        with_client(subject.new(server.base_uri) do |c|
+        client = subject.new(server.base_uri) do |c|
           c.query_params do
             {
               "param1" => "value1",
@@ -1287,7 +1309,9 @@ EOT
               "param3" => "value3",
             }
           end
-        end) do |client|
+        end
+
+        with_client(client) do |_|
           received_req = requests.pop
           query_string = received_req[:query_string]
           expect(query_string).to include("param1=value1")
