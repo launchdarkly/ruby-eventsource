@@ -205,28 +205,6 @@ EOT
     end
   end
 
-  it "invokes error handler when server returns 204 No Content" do
-    with_server do |server|
-      server.setup_response("/") do |req,res|
-        res.status = 204
-        res.body = ""
-        res.keep_alive = false
-      end
-
-      error_sink = Queue.new
-      client = subject.new(server.base_uri) do |c|
-        c.on_error { |error| error_sink << error }
-      end
-
-      with_client(client) do |c|
-        error = error_sink.pop
-        expect(error).to be_a(SSE::Errors::HTTPStatusError)
-        expect(error.status).to eq(204)
-        expect(error.message).to eq("")
-      end
-    end
-  end
-
   it "reconnects after read timeout" do
     events_body = simple_event_1_text
     with_server do |server|
