@@ -2,6 +2,13 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.4.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.3.0...2.4.0) (2026-01-15)
+
+
+### Features
+
+* Support dynamic query parameter on reconnect ([#74](https://github.com/launchdarkly/ruby-eventsource/issues/74)) ([e6c76bf](https://github.com/launchdarkly/ruby-eventsource/commit/e6c76bfbc3f101b90ccc52793e276772035f41d8))
+
 ## [2.3.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.2.6...2.3.0) (2025-08-28)
 
 
