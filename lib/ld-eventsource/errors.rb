@@ -25,7 +25,10 @@ module SSE
       attr_reader :message
 
       # The HTTP response headers, if any.
-      # @return [HTTP::Headers, nil]
+      #
+      # The headers object uses case-insensitive keys (via the http gem's HTTP::Headers).
+      #
+      # @return [Hash, nil] the response headers, or nil if not available
       attr_reader :headers
     end
 
@@ -45,7 +48,10 @@ module SSE
       attr_reader :type
 
       # The HTTP response headers, if any.
-      # @return [HTTP::Headers, nil]
+      #
+      # The headers object uses case-insensitive keys (via the http gem's HTTP::Headers).
+      #
+      # @return [Hash, nil] the response headers, or nil if not available
       attr_reader :headers
     end
 

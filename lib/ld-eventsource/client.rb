@@ -219,7 +219,9 @@ module SSE
     #
     # Any previously specified connect handler will be replaced.
     #
-    # @yieldparam headers [HTTP::Headers] the HTTP response headers from the successful connection.
+    # @yieldparam headers [Hash, nil] the HTTP response headers from the successful connection,
+    #   or nil if not available. The headers object uses case-insensitive keys (via the http gem's
+    #   HTTP::Headers).
     #
     def on_connect(&action)
       @on[:connect] = action
