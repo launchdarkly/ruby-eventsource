@@ -9,9 +9,10 @@ module SSE
     # handler specified in {Client#on_error}.
     #
     class HTTPStatusError < StandardError
-      def initialize(status, message)
+      def initialize(status, message, headers = nil)
         @status = status
         @message = message
+        @headers = headers
         super("HTTP error #{status}")
       end
 
@@ -22,6 +23,13 @@ module SSE
       # The response body, if any.
       # @return [String]
       attr_reader :message
+
+      # The HTTP response headers, if any.
+      #
+      # The headers object uses case-insensitive keys (via the http gem's HTTP::Headers).
+      #
+      # @return [Hash, nil] the response headers, or nil if not available
+      attr_reader :headers
     end
 
     #
@@ -29,14 +37,22 @@ module SSE
     # handler specified in {Client#on_error}.
     #
     class HTTPContentTypeError < StandardError
-      def initialize(type)
+      def initialize(type, headers = nil)
         @content_type = type
+        @headers = headers
         super("invalid content type \"#{type}\"")
       end
 
       # The HTTP content type.
       # @return [String]
       attr_reader :type
+
+      # The HTTP response headers, if any.
+      #
+      # The headers object uses case-insensitive keys (via the http gem's HTTP::Headers).
+      #
+      # @return [Hash, nil] the response headers, or nil if not available
+      attr_reader :headers
     end
 
     #

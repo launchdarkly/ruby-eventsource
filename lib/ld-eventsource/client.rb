@@ -162,7 +162,7 @@ module SSE
         reconnect_reset_interval: reconnect_reset_interval)
       @first_attempt = true
 
-      @on = { event: ->(_) {}, error: ->(_) {} }
+      @on = { event: ->(_) {}, error: ->(_) {}, connect: ->(_) {} }
       @last_id = last_event_id
       @query_params_callback = nil
 
@@ -205,6 +205,26 @@ module SSE
     #
     def on_error(&action)
       @on[:error] = action
+    end
+
+    #
+    # Specifies a block or Proc to be called when a successful connection is established. This will
+    # be called with a single parameter containing the HTTP response headers. It is called
+    # from the same worker thread that reads the stream, so no more events will be dispatched until
+    # it returns.
+    #
+    # This is called every time a connection is successfully established, including on reconnections
+    # after a failure. It allows you to inspect server response headers such as rate limits, custom
+    # metadata, or fallback directives (e.g., `X-LD-FD-FALLBACK`).
+    #
+    # Any previously specified connect handler will be replaced.
+    #
+    # @yieldparam headers [Hash, nil] the HTTP response headers from the successful connection,
+    #   or nil if not available. The headers object uses case-insensitive keys (via the http gem's
+    #   HTTP::Headers).
+    #
+    def on_connect(&action)
+      @on[:connect] = action
     end
 
     #
@@ -323,13 +343,15 @@ module SSE
           uri = build_uri_with_query_params
           @logger.info { "Connecting to event stream at #{uri}" }
           cxn = @http_client.request(@method, uri, build_opts)
+          headers = cxn.headers
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
             if content_type && content_type.start_with?("text/event-stream")
+              @on[:connect].call(headers)  # Notify connect callback with headers
               return cxn  # we're good to proceed
             else
               reset_http
-              err = Errors::HTTPContentTypeError.new(content_type)
+              err = Errors::HTTPContentTypeError.new(content_type, headers)
               @on[:error].call(err)
               @logger.warn { "Event source returned unexpected content type '#{content_type}'" }
             end
@@ -337,7 +359,7 @@ module SSE
             body = cxn.to_s  # grab the whole response body in case it has error details
             reset_http
             @logger.info { "Server returned error status #{cxn.status.code}" }
-            err = Errors::HTTPStatusError.new(cxn.status.code, body)
+            err = Errors::HTTPStatusError.new(cxn.status.code, body, headers)
             @on[:error].call(err)
           end
         rescue
