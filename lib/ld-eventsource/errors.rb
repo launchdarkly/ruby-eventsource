@@ -25,7 +25,7 @@ module SSE
       attr_reader :message
 
       # The HTTP response headers, if any.
-      # @return [Hash, nil]
+      # @return [HTTP::Headers, nil]
       attr_reader :headers
     end
 
@@ -45,7 +45,7 @@ module SSE
       attr_reader :type
 
       # The HTTP response headers, if any.
-      # @return [Hash, nil]
+      # @return [HTTP::Headers, nil]
       attr_reader :headers
     end
 

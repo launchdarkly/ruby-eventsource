@@ -209,7 +209,7 @@ module SSE
 
     #
     # Specifies a block or Proc to be called when a successful connection is established. This will
-    # be called with a single parameter containing the HTTP response headers as a Hash. It is called
+    # be called with a single parameter containing the HTTP response headers. It is called
     # from the same worker thread that reads the stream, so no more events will be dispatched until
     # it returns.
     #
@@ -219,7 +219,7 @@ module SSE
     #
     # Any previously specified connect handler will be replaced.
     #
-    # @yieldparam headers [Hash] the HTTP response headers from the successful connection
+    # @yieldparam headers [HTTP::Headers] the HTTP response headers from the successful connection.
     #
     def on_connect(&action)
       @on[:connect] = action
@@ -341,15 +341,15 @@ module SSE
           uri = build_uri_with_query_params
           @logger.info { "Connecting to event stream at #{uri}" }
           cxn = @http_client.request(@method, uri, build_opts)
-          headers_hash = cxn.headers.to_h
+          headers = cxn.headers
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
             if content_type && content_type.start_with?("text/event-stream")
-              @on[:connect].call(headers_hash)  # Notify connect callback with headers
+              @on[:connect].call(headers)  # Notify connect callback with headers
               return cxn  # we're good to proceed
             else
               reset_http
-              err = Errors::HTTPContentTypeError.new(content_type, headers_hash)
+              err = Errors::HTTPContentTypeError.new(content_type, headers)
               @on[:error].call(err)
               @logger.warn { "Event source returned unexpected content type '#{content_type}'" }
             end
@@ -357,7 +357,7 @@ module SSE
             body = cxn.to_s  # grab the whole response body in case it has error details
             reset_http
             @logger.info { "Server returned error status #{cxn.status.code}" }
-            err = Errors::HTTPStatusError.new(cxn.status.code, body, headers_hash)
+            err = Errors::HTTPStatusError.new(cxn.status.code, body, headers)
             @on[:error].call(err)
           end
         rescue

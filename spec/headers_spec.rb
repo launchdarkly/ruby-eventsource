@@ -58,7 +58,7 @@ describe "Header Exposure" do
         error = error_sink.pop
         expect(error).to be_a(SSE::Errors::HTTPStatusError)
         expect(error.status).to eq(401)
-        expect(error.headers).to be_a(Hash)
+        expect(error.headers).to be_a(HTTP::Headers)
         expect(error.headers['x-custom-header']).to eq('custom-value')
         expect(error.headers['x-ld-fd-fallback']).to eq('true')
       end
@@ -92,7 +92,7 @@ describe "Header Exposure" do
         error = error_sink.pop
         expect(error.headers).not_to be_nil
         # Headers should be case-insensitive accessible
-        fallback_header = error.headers.find { |k, v| k.downcase == 'x-launchdarkly-fd-fallback' }
+        fallback_header = error.headers.detect { |k, v| k.downcase == 'x-launchdarkly-fd-fallback' }
         expect(fallback_header).not_to be_nil
         expect(fallback_header[1]).to eq('1')
       end
@@ -121,7 +121,7 @@ describe "Header Exposure" do
 
         error = error_sink.pop
         expect(error).to be_a(SSE::Errors::HTTPContentTypeError)
-        expect(error.headers).to be_a(Hash)
+        expect(error.headers).to be_a(HTTP::Headers)
         expect(error.headers['x-custom-header']).to eq('test-value')
         expect(error.headers['x-ld-fd-fallback']).to eq('true')
       end
@@ -153,7 +153,7 @@ describe "Header Exposure" do
 
         error = error_sink.pop
         expect(error.headers).not_to be_nil
-        fallback_header = error.headers.find { |k, v| k.downcase == 'x-launchdarkly-fd-fallback' }
+        fallback_header = error.headers.detect { |k, v| k.downcase == 'x-launchdarkly-fd-fallback' }
         expect(fallback_header).not_to be_nil
       end
     end
@@ -178,7 +178,7 @@ describe "Header Exposure" do
 
         with_client(client) do |_|
           headers = connect_sink.pop
-          expect(headers).to be_a(Hash)
+          expect(headers).to be_a(HTTP::Headers)
           expect(headers['x-custom-header']).to eq('success-value')
           expect(headers['x-ld-env-id']).to eq('test-env-123')
         end
@@ -200,7 +200,7 @@ describe "Header Exposure" do
         with_client(client) do |_|
           first = order_sink.pop
           expect(first[0]).to eq(:connect)
-          expect(first[1]).to be_a(Hash)
+          expect(first[1]).to be_a(HTTP::Headers)
 
           second = order_sink.pop
           expect(second[0]).to eq(:event)
@@ -253,7 +253,7 @@ describe "Header Exposure" do
 
         with_client(client) do |_|
           headers = connect_sink.pop
-          fallback_header = headers.find { |k, v| k.downcase == 'x-launchdarkly-fd-fallback' }
+          fallback_header = headers.detect { |k, v| k.downcase == 'x-launchdarkly-fd-fallback' }
           expect(fallback_header).not_to be_nil
           expect(fallback_header[1]).to eq('1')
         end
