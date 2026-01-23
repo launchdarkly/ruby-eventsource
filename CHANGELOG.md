@@ -2,6 +2,13 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.5.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.4.0...2.5.0) (2026-01-23)
+
+
+### Features
+
+* Provide access to HTTP headers on connect or error ([#77](https://github.com/launchdarkly/ruby-eventsource/issues/77)) ([b50d660](https://github.com/launchdarkly/ruby-eventsource/commit/b50d660ac78e20428bac452cbc1518999f4e2f5a))
+
 ## [2.4.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.3.0...2.4.0) (2026-01-15)
 
 
