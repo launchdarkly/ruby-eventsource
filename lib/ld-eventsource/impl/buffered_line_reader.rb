@@ -66,7 +66,7 @@ module SSE
                 end
               end
               if i == buffer.length
-                buffer = ""
+                buffer = +"".b
                 i = 0
               end
               position = i
