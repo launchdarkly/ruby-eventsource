@@ -2,6 +2,13 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.5.1](https://github.com/launchdarkly/ruby-eventsource/compare/2.5.0...2.5.1) (2026-03-02)
+
+
+### Bug Fixes
+
+* Use in-place append for buffer concatenation to fix O(n^2) performance ([#80](https://github.com/launchdarkly/ruby-eventsource/issues/80)) ([a7e6c23](https://github.com/launchdarkly/ruby-eventsource/commit/a7e6c23835f6876d1db1a92dc479d75e8ffa0b67))
+
 ## [2.5.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.4.0...2.5.0) (2026-01-23)
 
 
