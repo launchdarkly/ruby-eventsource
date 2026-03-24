@@ -168,7 +168,7 @@ module SSE
         .follow
         .timeout(
           read: read_timeout,
-          connect: connect_timeout,
+          connect: connect_timeout
         )
       @cxn = nil
       @lock = Mutex.new
