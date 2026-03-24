@@ -165,8 +165,8 @@ module SSE
       end
 
       timeout_options = {}
-      timeout_options[:connect_timeout] = @connect_timeout if @connect_timeout
-      timeout_options[:read_timeout] = @read_timeout if @read_timeout
+      timeout_options[:connect] = @connect_timeout if @connect_timeout
+      timeout_options[:read] = @read_timeout if @read_timeout
 
       @http_client = HTTP::Client.new(**options)
         .follow
