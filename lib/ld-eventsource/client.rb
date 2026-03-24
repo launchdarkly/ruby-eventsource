@@ -158,7 +158,11 @@ module SSE
 
       options = http_client_options.is_a?(Hash) ? base_http_client_options.merge(http_client_options) : base_http_client_options
       options = options.transform_keys(&:to_sym)
-      options = options.select { |key, _| VALID_HTTP_CLIENT_OPTIONS.include?(key) }
+      options = options.select do |key, _|
+        included = VALID_HTTP_CLIENT_OPTIONS.include?(key)
+        @logger.warn { "Ignoring unsupported HTTP client option: #{key}" } unless included
+        included
+      end
 
       @http_client = HTTP::Client.new(**options)
         .follow
