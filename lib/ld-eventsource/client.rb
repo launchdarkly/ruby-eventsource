@@ -170,7 +170,7 @@ module SSE
 
       @http_client = HTTP::Client.new(**options)
         .follow
-        .timeout(timeout_options)
+      @http_client = @http_client.timeout(timeout_options) unless timeout_options.empty?
       @cxn = nil
       @lock = Mutex.new
 
