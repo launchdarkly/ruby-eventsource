@@ -127,8 +127,8 @@ module SSE
       @retry_enabled = retry_enabled
 
       @headers = headers.clone
-      @connect_timeout = connect_timeout
-      @read_timeout = read_timeout
+      @connect_timeout = connect_timeout&.to_f
+      @read_timeout = read_timeout&.to_f
       @method = method.to_s.upcase
       @payload = payload
       @logger = logger || default_logger
@@ -164,12 +164,13 @@ module SSE
         included
       end
 
+      timeout_options = {}
+      timeout_options[:connect_timeout] = @connect_timeout if @connect_timeout
+      timeout_options[:read_timeout] = @read_timeout if @read_timeout
+
       @http_client = HTTP::Client.new(**options)
         .follow
-        .timeout(
-          read: read_timeout,
-          connect: connect_timeout
-        )
+        .timeout(timeout_options)
       @cxn = nil
       @lock = Mutex.new
 
