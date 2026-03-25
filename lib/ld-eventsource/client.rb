@@ -52,6 +52,15 @@ module SSE
     # The default HTTP method for requests.
     DEFAULT_HTTP_METHOD = "GET"
 
+    # TODO(breaking): Remove this filtering once we have updated to the next major breaking version.
+    # HTTP v6 requires keyword arguments instead of an options hash, so we filter to only known valid
+    # arguments to avoid passing unsupported options.
+    VALID_HTTP_CLIENT_OPTIONS = %i[
+      base_uri body encoding features follow form headers json keep_alive_timeout
+      nodelay params persistent proxy response retriable socket_class ssl_context
+      ssl ssl_socket_class timeout_class timeout_options
+    ].freeze
+
     #
     # Creates a new SSE client.
     #
@@ -118,15 +127,15 @@ module SSE
       @retry_enabled = retry_enabled
 
       @headers = headers.clone
-      @connect_timeout = connect_timeout
-      @read_timeout = read_timeout
+      @connect_timeout = connect_timeout&.to_f
+      @read_timeout = read_timeout&.to_f
       @method = method.to_s.upcase
       @payload = payload
       @logger = logger || default_logger
 
       base_http_client_options = {}
       if socket_factory
-        base_http_client_options["socket_class"] = socket_factory
+        base_http_client_options[:socket_class] = socket_factory
       end
 
       if proxy
@@ -139,22 +148,29 @@ module SSE
       end
 
       if @proxy
-        base_http_client_options["proxy"] = {
+        base_http_client_options[:proxy] = {
           :proxy_address => @proxy.host,
           :proxy_port => @proxy.port,
         }
-        base_http_client_options["proxy"][:proxy_username] = @proxy.user unless @proxy.user.nil?
-        base_http_client_options["proxy"][:proxy_password] = @proxy.password unless @proxy.password.nil?
+        base_http_client_options[:proxy][:proxy_username] = @proxy.user unless @proxy.user.nil?
+        base_http_client_options[:proxy][:proxy_password] = @proxy.password unless @proxy.password.nil?
       end
 
       options = http_client_options.is_a?(Hash) ? base_http_client_options.merge(http_client_options) : base_http_client_options
+      options = options.transform_keys(&:to_sym)
+      options = options.select do |key, _|
+        included = VALID_HTTP_CLIENT_OPTIONS.include?(key)
+        @logger.warn { "Ignoring unsupported HTTP client option: #{key}" } unless included
+        included
+      end
 
-      @http_client = HTTP::Client.new(options)
+      timeout_options = {}
+      timeout_options[:connect] = @connect_timeout if @connect_timeout
+      timeout_options[:read] = @read_timeout if @read_timeout
+
+      @http_client = HTTP::Client.new(**options)
         .follow
-        .timeout({
-          read: read_timeout,
-          connect: connect_timeout,
-        })
+      @http_client = @http_client.timeout(timeout_options) unless timeout_options.empty?
       @cxn = nil
       @lock = Mutex.new
 
@@ -342,7 +358,7 @@ module SSE
         begin
           uri = build_uri_with_query_params
           @logger.info { "Connecting to event stream at #{uri}" }
-          cxn = @http_client.request(@method, uri, build_opts)
+          cxn = @http_client.request(@method, uri, **build_opts)
           headers = cxn.headers
           if cxn.status.code == 200
             content_type = cxn.content_type.mime_type
@@ -390,8 +406,10 @@ module SSE
             rescue HTTP::TimeoutError
               # For historical reasons, we rethrow this as our own type
               raise Errors::ReadTimeoutError.new(@read_timeout)
+            rescue EOFError
+              break
             end
-            break if data.nil?
+            break if data.nil?  # keep for v5 compat
             gen.yield data
           end
         end

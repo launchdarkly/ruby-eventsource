@@ -908,6 +908,103 @@ EOT
     end
   end
 
+  describe "http_client_options filtering" do
+    it "filters out unsupported options" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        client = subject.new(server.base_uri,
+          http_client_options: {
+            "socket_class" => "MySocket",
+            "ssl" => { verify_mode: 0 },
+            "not_a_real_option" => "should be removed",
+            "another_fake" => 123,
+          })
+
+        http_client = client.instance_variable_get(:@http_client)
+        options = http_client.default_options
+
+        expect(options.socket_class).to eq("MySocket")
+        expect(options.ssl).to eq({ verify_mode: 0 })
+
+        client.close
+      end
+    end
+
+    it "filters out unsupported options provided as symbols" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        client = subject.new(server.base_uri,
+          http_client_options: {
+            socket_class: "MySocket",
+            not_a_real_option: "should be removed",
+          })
+
+        http_client = client.instance_variable_get(:@http_client)
+        options = http_client.default_options
+
+        expect(options.socket_class).to eq("MySocket")
+
+        client.close
+      end
+    end
+
+    it "does not raise when only unsupported options are provided" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        client = nil
+        expect {
+          client = subject.new(server.base_uri,
+            http_client_options: {
+              "totally_fake" => true,
+              "also_fake" => "yes",
+            })
+        }.not_to raise_error
+
+        client.close
+      end
+    end
+
+    it "preserves all valid options" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, "", keep_open: true)
+        end
+
+        socket_factory = double("SocketFactory")
+        ssl_socket_factory = double("SSLSocketFactory")
+
+        client = subject.new(server.base_uri,
+          http_client_options: {
+            socket_class: socket_factory,
+            ssl_socket_class: ssl_socket_factory,
+            nodelay: true,
+            keep_alive_timeout: 30,
+            ssl: { verify_mode: 0 },
+          })
+
+        http_client = client.instance_variable_get(:@http_client)
+        options = http_client.default_options
+
+        expect(options.socket_class).to eq(socket_factory)
+        expect(options.ssl_socket_class).to eq(ssl_socket_factory)
+        expect(options.nodelay).to eq(true)
+        expect(options.keep_alive_timeout).to eq(30)
+        expect(options.ssl).to eq({ verify_mode: 0 })
+
+        client.close
+      end
+    end
+  end
+
   describe "retry parameter" do
     it "defaults to true (retries enabled)" do
       events_body = simple_event_1_text
