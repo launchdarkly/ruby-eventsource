@@ -2,6 +2,13 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [2.6.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.5.1...2.6.0) (2026-03-26)
+
+
+### Features
+
+* Expand version support for http.rb v6 ([#82](https://github.com/launchdarkly/ruby-eventsource/issues/82)) ([2f8732a](https://github.com/launchdarkly/ruby-eventsource/commit/2f8732a479d198be9b9e0ec90c63b8f4a5504830))
+
 ## [2.5.1](https://github.com/launchdarkly/ruby-eventsource/compare/2.5.0...2.5.1) (2026-03-02)
 
 
