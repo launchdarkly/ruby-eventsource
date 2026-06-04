@@ -1124,15 +1124,14 @@ EOT
           requests << request_data
           attempt += 1
           if attempt == 1
-            res.keep_alive = false
-            send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
+            send_stream_content(res, ": keepalive\n\n", keep_open: false)  # Close to trigger reconnect
           else
             send_stream_content(res, "", keep_open: true)
           end
         end
 
         counter = 0
-        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+        client = subject.new(server.base_uri, reconnect_time: 0.25) do |c|
           c.query_params do
             counter += 1
             {"request_id" => counter.to_s}
@@ -1344,7 +1343,7 @@ EOT
         end
 
         connection_count = 0
-        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+        client = subject.new(server.base_uri, reconnect_time: 0.25) do |c|
           c.query_params do
             connection_count += 1
             {"connection" => connection_count.to_s}
