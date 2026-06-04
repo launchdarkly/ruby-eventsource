@@ -1334,9 +1334,7 @@ EOT
           requests << request_data
           attempt += 1
           if attempt <= 2
-            res.status = 500
-            res.body = "error"
-            res.keep_alive = false
+            send_stream_content(res, ": ping\n\n", keep_open: false)  # Close to trigger reconnect
           else
             send_stream_content(res, "", keep_open: true)
           end
