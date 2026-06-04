@@ -1124,6 +1124,7 @@ EOT
           requests << request_data
           attempt += 1
           if attempt == 1
+            res.keep_alive = false
             send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
           else
             send_stream_content(res, "", keep_open: true)
