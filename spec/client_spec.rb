@@ -32,6 +32,7 @@ EOT
       yield client
     ensure
       client.close
+      sleep 0.1  # Allow worker thread to fully terminate before next test reuses the port
     end
   end
 
@@ -1131,7 +1132,7 @@ EOT
         end
 
         counter = 0
-        client = subject.new(server.base_uri, reconnect_time: 0.25) do |c|
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
           c.query_params do
             counter += 1
             {"request_id" => counter.to_s}
@@ -1341,7 +1342,7 @@ EOT
         end
 
         connection_count = 0
-        client = subject.new(server.base_uri, reconnect_time: 0.25) do |c|
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
           c.query_params do
             connection_count += 1
             {"connection" => connection_count.to_s}
