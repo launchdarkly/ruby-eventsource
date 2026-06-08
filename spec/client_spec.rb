@@ -32,6 +32,8 @@ EOT
       yield client
     ensure
       client.close
+      # Wait for SSE worker thread to terminate before next test reuses the port
+      Thread.list.select { |t| t.name == 'LD/SSEClient' }.each { |t| t.join(1) }
     end
   end
 
@@ -1124,7 +1126,7 @@ EOT
           requests << request_data
           attempt += 1
           if attempt == 1
-            send_stream_content(res, "", keep_open: false)  # Close to trigger reconnect
+            send_stream_content(res, ": keepalive\n\n", keep_open: false)  # Close to trigger reconnect
           else
             send_stream_content(res, "", keep_open: true)
           end
@@ -1334,9 +1336,7 @@ EOT
           requests << request_data
           attempt += 1
           if attempt <= 2
-            res.status = 500
-            res.body = "error"
-            res.keep_alive = false
+            send_stream_content(res, ": ping\n\n", keep_open: false)  # Close to trigger reconnect
           else
             send_stream_content(res, "", keep_open: true)
           end

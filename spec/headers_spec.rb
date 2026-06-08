@@ -18,6 +18,8 @@ describe "Header Exposure" do
       yield client
     ensure
       client.close
+      # Wait for SSE worker thread to terminate before next test reuses the port
+      Thread.list.select { |t| t.name == 'LD/SSEClient' }.each { |t| t.join(1) }
     end
   end
 
