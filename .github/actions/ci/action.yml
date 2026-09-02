@@ -31,7 +31,7 @@ runs:
     - name: Run RuboCop
       if: ${{ !startsWith(inputs.ruby-version, 'jruby') }}
       shell: bash
-      run: bundle exec rubocop --parallel
+      run: bundle exec rubocop
 
     - name: Build contract tests
       if: ${{ !startsWith(inputs.ruby-version, 'jruby') }}
