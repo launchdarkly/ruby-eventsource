@@ -1416,4 +1416,105 @@ EOT
       end
     end
   end
+
+  describe "server-initiated stream close" do
+    it "passes one StreamClosedError to the error handler, and the client reconnects" do
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          send_stream_content(res, attempt == 1 ? simple_event_1_text : simple_event_2_text,
+            keep_open: attempt == 2)
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(error_sink.pop).to eq(SSE::Errors::StreamClosedError.new)
+          expect(event_sink.pop).to eq(simple_event_2)
+          expect(attempt).to eq 2
+          expect(error_sink.empty?).to be true
+        end
+      end
+    end
+
+    it "does not pass an error to the error handler when the client is closed" do
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: true)
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          event_sink.pop  # wait till we have definitely started reading the stream
+          c.close
+          sleep 0.25  # there's no way to really know when the stream thread has finished
+          expect(error_sink.empty?).to be true
+        end
+      end
+    end
+
+    it "passes ReadTimeoutError, not StreamClosedError, when the stream times out" do
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          send_stream_content(res, attempt == 1 ? simple_event_1_text : simple_event_2_text,
+            keep_open: true)
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap, read_timeout: 0.25) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(event_sink.pop).to eq(simple_event_2)
+          c.close
+          errors = []
+          errors << error_sink.pop until error_sink.empty?
+          expect(errors).not_to be_empty
+          expect(errors).to all(be_a(SSE::Errors::ReadTimeoutError))
+        end
+      end
+    end
+
+    it "reconnects if the error handler raises an exception" do
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          send_stream_content(res, attempt == 1 ? simple_event_1_text : simple_event_2_text,
+            keep_open: attempt == 2)
+        end
+
+        event_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| raise "handler failure" }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(event_sink.pop).to eq(simple_event_2)
+          expect(attempt).to eq 2
+        end
+      end
+    end
+  end
 end

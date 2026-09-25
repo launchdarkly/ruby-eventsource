@@ -79,5 +79,15 @@ module SSE
         super("no data received in #{interval} seconds")
       end
     end
+
+    #
+    # An exception class indicating that the server ended the stream without an error. This is
+    # passed to the error handler specified in {Client#on_error}, and the client then reconnects.
+    #
+    class StreamClosedError < StandardError
+      def initialize
+        super("stream closed by server")
+      end
+    end
   end
 end

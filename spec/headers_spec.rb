@@ -364,11 +364,8 @@ describe "Header Exposure" do
     it "handles all three callback types without conflicts" do
       with_server do |server|
         server.setup_response("/") do |req,res|
-          res.status = 200
-          res.content_type = "text/event-stream"
           res['X-Test'] = 'multi-callback'
-          res.chunked = true
-          res.body = proc { |out| out.write("data: message\n\n") }
+          send_stream_content(res, "data: message\n\n", keep_open: true)
         end
 
         callbacks_fired = []
