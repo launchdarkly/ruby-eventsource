@@ -123,7 +123,7 @@ module SSE
           retry_enabled: true,
           http_client_options: nil)
       @uri = URI(uri)
-      @stopped = Concurrent::AtomicBoolean.new(false)
+      @stop_event = Concurrent::Event.new
       @retry_enabled = retry_enabled
 
       @headers = headers.clone
@@ -278,7 +278,7 @@ module SSE
     # has no effect if called a second time.
     #
     def close
-      if @stopped.make_true
+      if @stop_event.try?
         reset_http
       end
     end
@@ -289,7 +289,7 @@ module SSE
     # @return [Boolean]  true if the client has been shut down
     #
     def closed?
-      @stopped.value
+      @stop_event.set?
     end
 
     private
@@ -314,7 +314,7 @@ module SSE
     end
 
     def run_stream
-      until @stopped.value
+      until @stop_event.set?
         close_connection
         begin
           resp = connect
@@ -323,12 +323,16 @@ module SSE
           end
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
-          return if @stopped.value
+          if @stop_event.set?
+            # close did not see this connection, so close it here.
+            reset_http
+            return
+          end
           read_stream(resp) unless resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
-          # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
-          if @stopped.value
+          # of exception depends on the specific Ruby runtime. But the client will always be closed in this case.
+          if @stop_event.set?
             @logger.info { "Stream connection closed" }
           else
             log_and_dispatch_error(e, "Unexpected error from event source")
@@ -347,12 +351,14 @@ module SSE
     # Try to establish a streaming connection. Returns the StreamingHTTPConnection object if successful.
     def connect
       loop do
-        return if @stopped.value
+        return if @stop_event.set?
         interval = @first_attempt ? 0 : @backoff.next_interval
         @first_attempt = false
         if interval > 0
           @logger.info { "Will retry connection after #{'%.3f' % interval} seconds" }
-          sleep(interval)
+          # This wait ends early when close sets the event.
+          @stop_event.wait(interval)
+          return if @stop_event.set?
         end
         cxn = nil
         begin
@@ -395,7 +401,7 @@ module SSE
 
       chunks = Enumerator.new do |gen|
         loop do
-          if @stopped.value
+          if @stop_event.set?
             break
           else
             begin
@@ -417,7 +423,7 @@ module SSE
       event_parser = Impl::EventParser.new(Impl::BufferedLineReader.lines_from(chunks), @last_id)
 
       event_parser.items.each do |item|
-        return if @stopped.value
+        return if @stop_event.set?
         case item
           when StreamEvent
             dispatch_event(item)
