@@ -1436,10 +1436,42 @@ EOT
 
         with_client(client) do |c|
           expect(event_sink.pop).to eq(simple_event_1)
-          expect(error_sink.pop).to eq(SSE::Errors::StreamClosedError.new)
+          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedError)
           expect(event_sink.pop).to eq(simple_event_2)
           expect(attempt).to eq 2
           expect(error_sink.empty?).to be true
+        end
+      end
+    end
+
+    it "passes StreamClosedError when the HTTP library returns nil at the end of the stream" do
+      # http 4 and 5 return nil from readpartial at the end of the stream; http 6 raises EOFError.
+      allow_any_instance_of(HTTP::Response).to receive(:readpartial).and_wrap_original do |m, *args|
+        m.call(*args)
+      rescue EOFError
+        nil
+      end
+
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          send_stream_content(res, attempt == 1 ? simple_event_1_text : simple_event_2_text,
+            keep_open: attempt == 2)
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(event_sink.pop).to eq(simple_event_1)
+          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedError)
+          expect(event_sink.pop).to eq(simple_event_2)
+          expect(attempt).to eq 2
         end
       end
     end

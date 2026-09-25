@@ -324,10 +324,7 @@ module SSE
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
           return if @stopped.value
-          unless resp.nil?
-            read_stream(resp)
-            log_and_dispatch_error(Errors::StreamClosedError.new, "Stream closed by server") unless @stopped.value
-          end
+          read_stream(resp) unless resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
           # of exception depends on the specific Ruby runtime. But @stopped will always be set in this case.
@@ -410,9 +407,9 @@ module SSE
               # For historical reasons, we rethrow this as our own type
               raise Errors::ReadTimeoutError.new(@read_timeout)
             rescue EOFError
-              break
+              raise Errors::StreamClosedError
             end
-            break if data.nil?  # keep for v5 compat
+            raise Errors::StreamClosedError if data.nil?  # keep for v5 compat
             gen.yield data
           end
         end
