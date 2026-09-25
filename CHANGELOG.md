@@ -2,6 +2,17 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.0.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.6.0...3.0.0) (2026-09-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* Report a server-initiated stream close to the error handler ([#91](https://github.com/launchdarkly/ruby-eventsource/issues/91))
+
+### Features
+
+* Report a server-initiated stream close to the error handler ([#91](https://github.com/launchdarkly/ruby-eventsource/issues/91)) ([7e4dc1b](https://github.com/launchdarkly/ruby-eventsource/commit/7e4dc1b2488ad5ab880ab098181532a6ea02b6ef))
+
 ## [2.6.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.5.1...2.6.0) (2026-03-26)
 
 
