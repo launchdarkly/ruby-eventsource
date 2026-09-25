@@ -124,6 +124,7 @@ module SSE
           http_client_options: nil)
       @uri = URI(uri)
       @stopped = Concurrent::AtomicBoolean.new(false)
+      @stop_event = Concurrent::Event.new
       @retry_enabled = retry_enabled
 
       @headers = headers.clone
@@ -279,6 +280,7 @@ module SSE
     #
     def close
       if @stopped.make_true
+        @stop_event.set
         reset_http
       end
     end
@@ -323,7 +325,11 @@ module SSE
           end
           # There's a potential race if close was called in the middle of the previous line, i.e. after we
           # connected but before @cxn was set. Checking the variable again is a bit clunky but avoids that.
-          return if @stopped.value
+          if @stopped.value
+            # close did not see this connection, so close it here.
+            reset_http
+            return
+          end
           read_stream(resp) unless resp.nil?
         rescue => e
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
@@ -352,7 +358,9 @@ module SSE
         @first_attempt = false
         if interval > 0
           @logger.info { "Will retry connection after #{'%.3f' % interval} seconds" }
-          sleep(interval)
+          # This wait ends early when close sets the event.
+          @stop_event.wait(interval)
+          return if @stopped.value
         end
         cxn = nil
         begin
