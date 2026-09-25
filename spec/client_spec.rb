@@ -1418,7 +1418,7 @@ EOT
   end
 
   describe "server-initiated stream close" do
-    it "passes one StreamClosedError to the error handler, and the client reconnects" do
+    it "passes one StreamClosedByServerError to the error handler, and the client reconnects" do
       with_server do |server|
         attempt = 0
         server.setup_response("/") do |req,res|
@@ -1436,7 +1436,7 @@ EOT
 
         with_client(client) do |c|
           expect(event_sink.pop).to eq(simple_event_1)
-          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedError)
+          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedByServerError)
           expect(event_sink.pop).to eq(simple_event_2)
           expect(attempt).to eq 2
           expect(error_sink.empty?).to be true
@@ -1444,7 +1444,7 @@ EOT
       end
     end
 
-    it "passes StreamClosedError when the HTTP library returns nil at the end of the stream" do
+    it "passes StreamClosedByServerError when the HTTP library returns nil at the end of the stream" do
       # http 4 and 5 return nil from readpartial at the end of the stream; http 6 raises EOFError.
       allow_any_instance_of(HTTP::Response).to receive(:readpartial).and_wrap_original do |m, *args|
         m.call(*args)
@@ -1469,7 +1469,7 @@ EOT
 
         with_client(client) do |c|
           expect(event_sink.pop).to eq(simple_event_1)
-          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedError)
+          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedByServerError)
           expect(event_sink.pop).to eq(simple_event_2)
           expect(attempt).to eq 2
         end
@@ -1498,7 +1498,7 @@ EOT
       end
     end
 
-    it "passes ReadTimeoutError, not StreamClosedError, when the stream times out" do
+    it "passes ReadTimeoutError, not StreamClosedByServerError, when the stream times out" do
       with_server do |server|
         attempt = 0
         server.setup_response("/") do |req,res|

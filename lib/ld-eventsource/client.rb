@@ -407,9 +407,9 @@ module SSE
               # For historical reasons, we rethrow this as our own type
               raise Errors::ReadTimeoutError.new(@read_timeout)
             rescue EOFError
-              raise Errors::StreamClosedError
+              raise Errors::StreamClosedByServerError
             end
-            raise Errors::StreamClosedError if data.nil?  # keep for v5 compat
+            raise Errors::StreamClosedByServerError if data.nil?  # keep for v5 compat
             gen.yield data
           end
         end
