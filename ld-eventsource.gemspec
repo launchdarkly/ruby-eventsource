@@ -20,7 +20,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
   spec.required_ruby_version = '>= 3.1'
 
-  spec.add_development_dependency 'logger', '~> 1.5'
   spec.add_development_dependency 'rspec', '~> 3.2'
   spec.add_development_dependency 'rspec_junit_formatter', '~> 0.3.0'
   spec.add_development_dependency "rubocop", "~> 1.37"
@@ -29,4 +28,5 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency 'concurrent-ruby', '~> 1.0'
   spec.add_runtime_dependency 'http', '>= 4.4.1', '< 7.0.0'
+  spec.add_runtime_dependency 'logger', '~> 1.5'
 end
