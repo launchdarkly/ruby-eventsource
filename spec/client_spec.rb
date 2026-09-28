@@ -454,6 +454,79 @@ EOT
     end
   end
 
+  describe "close during a reconnect wait" do
+    let(:long_reconnect_time) { 5 }
+
+    def start_failing_client(server, attempts)
+      server.setup_response("/") do |req,res|
+        attempts << Time.now
+        res.status = 500
+        res.body = "sorry"
+        res.keep_alive = false
+      end
+
+      error_sink = Queue.new
+      threads_before = Thread.list
+      client = subject.new(server.base_uri, reconnect_time: long_reconnect_time) do |c|
+        c.on_error { |error| error_sink << error }
+      end
+      worker = (Thread.list - threads_before).detect { |t| t.name == 'LD/SSEClient' }
+      error_sink.pop  # the client now waits before it tries again
+      [client, worker]
+    end
+
+    it "stops the worker thread promptly" do
+      with_server do |server|
+        client, worker = start_failing_client(server, Queue.new)
+        with_client(client) do |c|
+          c.close
+          expect(worker.join(1)).not_to be_nil
+        end
+      end
+    end
+
+    it "does not send another request" do
+      with_server do |server|
+        attempts = Queue.new
+        client, worker = start_failing_client(server, attempts)
+        with_client(client) do |c|
+          c.close
+          worker.join(1)
+          expect(attempts.size).to eq 1
+        end
+      end
+    end
+  end
+
+  it "closes a connection that opens while the client is closed" do
+    server = TCPServer.new("127.0.0.1", 0)
+    server_result = Queue.new
+    server_thread = Thread.new do
+      socket = server.accept
+      while (line = socket.gets) && line != "\r\n"; end
+      socket.write("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n")
+      readable = IO.select([socket], nil, nil, 2)
+      eof = readable && socket.read_nonblock(1, exception: false).nil?
+      server_result << (eof ? :closed : :open)
+      socket.close
+    end
+
+    # query_params runs after the last stop check and before the request, so close cannot close this connection.
+    client = subject.new("http://127.0.0.1:#{server.addr[1]}") do |c|
+      c.query_params do
+        c.close
+        {}
+      end
+    end
+
+    with_client(client) do
+      expect(server_result.pop).to eq :closed
+    end
+  ensure
+    server_thread&.join(1)
+    server&.close
+  end
+
   describe "HTTP method parameter" do
     it "defaults to GET method" do
       with_server do |server|
