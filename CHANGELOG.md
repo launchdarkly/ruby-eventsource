@@ -2,6 +2,23 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.0.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.6.0...3.0.0) (2026-09-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* Report a server-initiated stream close to the error handler ([#91](https://github.com/launchdarkly/ruby-eventsource/issues/91))
+
+### Features
+
+* Report a server-initiated stream close to the error handler ([#91](https://github.com/launchdarkly/ruby-eventsource/issues/91)) ([7e4dc1b](https://github.com/launchdarkly/ruby-eventsource/commit/7e4dc1b2488ad5ab880ab098181532a6ea02b6ef))
+
+
+### Bug Fixes
+
+* Declare logger as a runtime dependency ([#94](https://github.com/launchdarkly/ruby-eventsource/issues/94)) ([f7809c2](https://github.com/launchdarkly/ruby-eventsource/commit/f7809c2047738d8231062477cd7128160ce573ff))
+* Stop the worker thread promptly when the client is closed during a reconnect wait ([#93](https://github.com/launchdarkly/ruby-eventsource/issues/93)) ([054b11b](https://github.com/launchdarkly/ruby-eventsource/commit/054b11b71d3dc330e275f83b1c72943342041b65))
+
 ## [2.6.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.5.1...2.6.0) (2026-03-26)
 
 
