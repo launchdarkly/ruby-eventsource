@@ -39,13 +39,13 @@ module SSE
           @attempts = 0 if good_duration >= @reconnect_reset_interval
         end
         @last_good_time = nil
+        # A zero base must not be multiplied: 0.0 * Infinity is NaN. Also, rand(0) is not permitted.
+        return 0 if @base_interval <= 0 || @max_interval <= 0
+
         target = [@base_interval * (2 ** @attempts), @max_interval].min.to_f
-        @attempts += 1
-        if target == 0
-          0  # in some Ruby versions it's illegal to call rand(0)
-        else
-          (target / 2) + @jitter_rand.rand(target / 2)
-        end
+        # Stop at the ceiling, so that the power of 2 cannot grow without limit.
+        @attempts += 1 if target < @max_interval
+        (target / 2) + @jitter_rand.rand(target / 2)
       end
 
       #

@@ -315,7 +315,8 @@ module SSE
 
     def run_stream
       until @stop_event.set?
-        close_connection
+        log_close_errors { close_connection }
+        error = nil
         begin
           resp = connect
           @lock.synchronize do
@@ -330,25 +331,25 @@ module SSE
           end
           read_stream(resp) unless resp.nil?
         rescue => e
+          error = e
+        end
+        # Close the connection before the error handler runs, because the handler can block for a long time.
+        log_close_errors { reset_http }
+        unless error.nil?
           # When we deliberately close the connection, it will usually trigger an exception. The exact type
           # of exception depends on the specific Ruby runtime. But the client will always be closed in this case.
           if @stop_event.set?
             @logger.info { "Stream connection closed" }
           else
-            log_and_dispatch_error(e, "Unexpected error from event source")
+            log_and_dispatch_error(error, "Unexpected error from event source")
           end
-        end
-        begin
-          reset_http
-        rescue StandardError => e
-          log_and_dispatch_error(e, "Unexpected error while closing stream")
         end
 
         return close unless @retry_enabled
       end
     end
 
-    # Try to establish a streaming connection. Returns the StreamingHTTPConnection object if successful.
+    # Try to establish a streaming connection. Returns the HTTP::Response object if successful.
     def connect
       loop do
         return if @stop_event.set?
@@ -392,8 +393,7 @@ module SSE
       end
     end
 
-    # Pipe the output of the StreamingHTTPConnection into the EventParser, and dispatch events as
-    # they arrive.
+    # Pipe the output of the HTTP::Response into the EventParser, and dispatch events as they arrive.
     def read_stream(cxn)
       # Tell the Backoff object that the connection is now in a valid state. It uses that information so
       # it can automatically reset itself if enough time passes between failures.
@@ -451,6 +451,15 @@ module SSE
         @logger.warn { "Error handler threw an exception: #{ee.inspect}"}
         @logger.debug { "Exception trace: #{ee.backtrace}" }
       end
+    end
+
+    # A failure to close is logged but not dispatched, so each connection attempt gives the error
+    # handler at most one error, and the worker thread continues.
+    def log_close_errors
+      yield
+    rescue StandardError => e
+      @logger.warn { "Unexpected error while closing stream: #{e.inspect}" }
+      @logger.debug { "Exception trace: #{e.backtrace}" }
     end
 
     def build_headers
