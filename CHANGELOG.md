@@ -2,6 +2,16 @@
 
 All notable changes to the LaunchDarkly SSE Client for Ruby will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.0.1](https://github.com/launchdarkly/ruby-eventsource/compare/3.0.0...3.0.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* Close the connection before passing a stream error to the error handler ([4b59dcc](https://github.com/launchdarkly/ruby-eventsource/commit/4b59dcc14cad6840b74efef5270c65f5544fcffa))
+* Keep reconnecting when closing the previous connection fails ([4b59dcc](https://github.com/launchdarkly/ruby-eventsource/commit/4b59dcc14cad6840b74efef5270c65f5544fcffa))
+* Pass at most one error to the error handler for each connection attempt ([4b59dcc](https://github.com/launchdarkly/ruby-eventsource/commit/4b59dcc14cad6840b74efef5270c65f5544fcffa))
+* Prevent a reconnect delay of NaN when the retry interval is zero ([4b59dcc](https://github.com/launchdarkly/ruby-eventsource/commit/4b59dcc14cad6840b74efef5270c65f5544fcffa))
+
 ## [3.0.0](https://github.com/launchdarkly/ruby-eventsource/compare/2.6.0...3.0.0) (2026-09-28)
 
 
