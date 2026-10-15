@@ -1622,4 +1622,91 @@ EOT
       end
     end
   end
+
+  describe "connection cleanup after an error" do
+    def pop_with_timeout(queue)
+      Timeout.timeout(5) { queue.pop }
+    end
+
+    it "closes the connection before it calls the error handler" do
+      steps = Queue.new
+      allow_any_instance_of(HTTP::Connection).to receive(:close).and_wrap_original do |m, *args|
+        steps << :connection_closed
+        m.call(*args)
+      end
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: true)
+        end
+
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| raise "event handler failure" }
+          c.on_error { |error| steps << :error_dispatched }
+        end
+
+        with_client(client) do |c|
+          expect(pop_with_timeout(steps)).to eq(:connection_closed)
+          step = pop_with_timeout(steps) until step == :error_dispatched
+        end
+      end
+    end
+
+    it "does not pass a second error to the error handler when closing the connection fails" do
+      close_calls = 0
+      allow_any_instance_of(SSE::Client).to receive(:reset_http).and_wrap_original do |m, *args|
+        close_calls += 1
+        raise IOError, "close failure" if close_calls == 1
+        m.call(*args)
+      end
+
+      with_server do |server|
+        attempt = 0
+        server.setup_response("/") do |req,res|
+          attempt += 1
+          send_stream_content(res, attempt == 1 ? simple_event_1_text : simple_event_2_text,
+            keep_open: attempt == 2)
+        end
+
+        event_sink = Queue.new
+        error_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+          c.on_error { |error| error_sink << error }
+        end
+
+        with_client(client) do |c|
+          expect(pop_with_timeout(event_sink)).to eq(simple_event_1)
+          expect(pop_with_timeout(event_sink)).to eq(simple_event_2)
+          expect(close_calls).to be >= 1
+          expect(error_sink.size).to eq 1
+          expect(error_sink.pop).to be_a(SSE::Errors::StreamClosedByServerError)
+        end
+      end
+    end
+
+    it "keeps the worker thread alive when closing the previous connection fails" do
+      close_calls = 0
+      allow_any_instance_of(SSE::Client).to receive(:close_connection).and_wrap_original do |m, *args|
+        close_calls += 1
+        raise IOError, "close failure" if close_calls == 1
+        m.call(*args)
+      end
+
+      with_server do |server|
+        server.setup_response("/") do |req,res|
+          send_stream_content(res, simple_event_1_text, keep_open: true)
+        end
+
+        event_sink = Queue.new
+        client = subject.new(server.base_uri, reconnect_time: reconnect_asap) do |c|
+          c.on_event { |event| event_sink << event }
+        end
+
+        with_client(client) do |c|
+          expect(pop_with_timeout(event_sink)).to eq(simple_event_1)
+        end
+      end
+    end
+  end
 end
