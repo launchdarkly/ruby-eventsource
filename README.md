@@ -11,7 +11,7 @@ Parts of this code are based on https://github.com/Tonkpils/celluloid-eventsourc
 Supported Ruby versions
 -----------------------
 
-This gem has a minimum Ruby version of 3.1.
+While this gem requires Ruby 3.1 or later, you should use the latest patched version of a supported Ruby release.
 
 Quick setup
 -----------
