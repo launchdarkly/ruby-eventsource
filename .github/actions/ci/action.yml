@@ -51,3 +51,4 @@ runs:
         repo: sse-contract-tests
         branch: main
         version: v1
+        enable_persistence_tests: false
