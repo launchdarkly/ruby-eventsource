@@ -49,5 +49,6 @@ runs:
         test_service_port: 8000
         token: ${{ inputs.token }}
         repo: sse-contract-tests
+        enable_persistence_tests: false
         branch: main
         version: v1
